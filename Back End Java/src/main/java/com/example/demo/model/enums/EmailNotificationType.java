@@ -1,0 +1,14 @@
+package com.example.demo.model.enums;
+
+public enum EmailNotificationType {
+    ORDER_CONFIRMATION,
+    ORDER_REMINDER_J1,
+    ORDER_CANCELLATION,
+    MEMBERSHIP_VALIDATION,
+    MEMBERSHIP_REJECTION,
+    MEMBERSHIP_REQUEST_RECEIVED,
+    ORDER_READY,
+    LOW_STOCK_ALERT,
+    OUT_OF_STOCK_ALERT,
+    PASSWORD_SETUP
+}

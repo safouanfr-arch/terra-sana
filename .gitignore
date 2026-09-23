@@ -1,0 +1,36 @@
+# Personal workspace and academic documents
+/.vscode/
+/Analyse/
+/out/
+/PROJET.md
+
+# Backend generated files and IDE metadata
+/Back End Java/.gradle/
+/Back End Java/.settings/
+/Back End Java/build/
+/Back End Java/bin/
+/Back End Java/data/
+/Back End Java/.classpath
+/Back End Java/.project
+/Back End Java/*.mv.db
+/Back End Java/*.trace.db
+/Back End Java/*.lock.db
+
+# Local configuration and secrets
+/Back End Java/config/application-secrets.properties
+**/.env
+**/.env.*
+!**/.env.example
+
+# Frontend dependencies and generated files
+/Front End VUE3/node_modules/
+/Front End VUE3/dist/
+/Front End VUE3/dist-ssr/
+
+# Generic editor and OS files
+**/.idea/
+*.iml
+*.log
+.DS_Store
+Thumbs.db
+

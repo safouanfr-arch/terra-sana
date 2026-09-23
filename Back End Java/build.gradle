@@ -1,0 +1,88 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ['-parameters']
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+def testRuntimeRoot = new File(System.getenv('TEMP') ?: System.getProperty('java.io.tmpdir'), 'terra-sana-gradle-test')
+def relocatedMainOutput = new File(testRuntimeRoot, 'main')
+def relocatedTestOutput = new File(testRuntimeRoot, 'test')
+def eclipseMainOutput = layout.projectDirectory.dir('bin/main')
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'com.h2database:h2'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register('syncMainTestRuntimeOutput', Sync) {
+	dependsOn tasks.named('classes')
+	from sourceSets.main.output
+	into relocatedMainOutput
+}
+
+tasks.register('syncTestRuntimeOutput', Sync) {
+	dependsOn tasks.named('testClasses')
+	from sourceSets.test.output
+	into relocatedTestOutput
+}
+
+tasks.register('syncEclipseRuntimeOutput', Sync) {
+	dependsOn tasks.named('classes')
+	from sourceSets.main.output
+	into eclipseMainOutput
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	if (isWindows) {
+		dependsOn tasks.named('syncMainTestRuntimeOutput')
+		dependsOn tasks.named('syncTestRuntimeOutput')
+		testClassesDirs = files(relocatedTestOutput)
+		classpath = files(relocatedTestOutput, relocatedMainOutput) + configurations.testRuntimeClasspath
+	}
+}
+
+tasks.named('clean') {
+	doLast {
+		delete testRuntimeRoot
+	}
+}
+
+tasks.named('build') {
+	finalizedBy tasks.named('syncEclipseRuntimeOutput')
+}
