@@ -53,6 +53,16 @@ Le frontend appelle une API REST JSON avec cookies de session. Les contrôleurs 
 
 ## Lancer le projet
 
+### Windows : lancement en un clic
+
+Le dossier `launcher/` permet de créer deux raccourcis sur le Bureau : `Terra Sana` démarre silencieusement le backend et le frontend puis ouvre l'application, tandis que `Arrêter Terra Sana` ferme les processus lancés par ce raccourci.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\launcher\Install-DesktopShortcuts.ps1
+```
+
+Les journaux de démarrage sont conservés localement dans `.terra-sana-runtime/` et ne sont pas versionnés.
+
 ### Prérequis
 
 - JDK 17 ou supérieur
@@ -96,4 +106,3 @@ La CI exécute automatiquement les tests backend et le build des deux applicatio
 ## Périmètre
 
 Ce projet a été réalisé dans le cadre d'un travail de fin d'études. Il vise un fonctionnement local complet et démontrable. Le paiement en ligne, le déploiement de production et la logistique de transport ne font volontairement pas partie du périmètre.
-

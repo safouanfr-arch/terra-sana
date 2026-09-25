@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import com.example.demo.dao.CommandeRepository;
 import com.example.demo.dto.GeneratedEmailDto;
@@ -31,6 +32,18 @@ class OrderReminderSchedulerTest {
 
     @Mock
     private GeneratedEmailService generatedEmailService;
+
+    @Test
+    void springCanInstantiateSchedulerWithProductionConstructor() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.registerBean(CommandeRepository.class, () -> commandeRepository);
+            context.registerBean(GeneratedEmailService.class, () -> generatedEmailService);
+            context.register(OrderReminderScheduler.class);
+            context.refresh();
+
+            assertThat(context.getBean(OrderReminderScheduler.class)).isNotNull();
+        }
+    }
 
     @Test
     void repeatedSchedulerRunsProduceOnlyOneReminder() {

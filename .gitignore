@@ -3,6 +3,7 @@
 /Analyse/
 /out/
 /PROJET.md
+/.terra-sana-runtime/
 
 # Backend generated files and IDE metadata
 /Back End Java/.gradle/
@@ -33,4 +34,3 @@
 *.log
 .DS_Store
 Thumbs.db
-
