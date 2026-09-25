@@ -192,19 +192,14 @@
 
 <script setup>
 import { reactive, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { authApi, getApiErrorMessage, handleApiAccessError, isApiAccessError } from '../../services/api.js'
 import { useAuthStore } from '../../stores/authStore'
 
-const props = defineProps({
-  user: {
-    type: Object,
-    default: null
-  }
-})
-
 const router = useRouter()
 const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const activeTab = ref('profil')
 const apiError = ref('')
@@ -236,19 +231,19 @@ const passwordData = reactive({
 const passwordErrors = ref({})
 
 watch(
-  () => props.user,
-  user => {
-    if (!user) {
+  user,
+  currentUser => {
+    if (!currentUser) {
       return
     }
-    profilData.nom = user.nom || ''
-    profilData.prenom = user.prenom || ''
-    profilData.email = user.email || ''
-    profilData.telephone = user.telephone || ''
-    profilData.rue = user.adresse || user.rue || ''
-    profilData.ville = user.ville || ''
-    profilData.codePostal = user.codePostal || ''
-    profilData.pays = user.pays || 'Belgique'
+    profilData.nom = currentUser.nom || ''
+    profilData.prenom = currentUser.prenom || ''
+    profilData.email = currentUser.email || ''
+    profilData.telephone = currentUser.telephone || ''
+    profilData.rue = currentUser.adresse || currentUser.rue || ''
+    profilData.ville = currentUser.ville || ''
+    profilData.codePostal = currentUser.codePostal || ''
+    profilData.pays = currentUser.pays || 'Belgique'
   },
   { immediate: true }
 )

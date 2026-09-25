@@ -7,10 +7,7 @@
     />
 
     <main class="main-content">
-      <router-view
-        :isConnected="isConnected"
-        :user="user"
-      />
+      <router-view />
     </main>
 
     <footer class="footer">

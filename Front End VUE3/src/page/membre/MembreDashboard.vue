@@ -59,16 +59,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '../../stores/authStore'
 import { usePanierStore } from '../../stores/panierStore'
 
+const authStore = useAuthStore()
 const panierStore = usePanierStore()
-
-defineProps({
-  user: {
-    type: Object,
-    required: true
-  }
-})
+const { user } = storeToRefs(authStore)
 
 const quickActions = computed(() => [
   { id: 1, kicker: 'Catalogue', title: 'Produits disponibles', description: 'Parcourir les produits et leurs categories', path: '/catalogue' },

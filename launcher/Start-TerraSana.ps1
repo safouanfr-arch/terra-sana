@@ -13,7 +13,8 @@ $runtimeDirectory = Join-Path $projectRoot '.terra-sana-runtime'
 $stateFile = Join-Path $runtimeDirectory 'processes.json'
 $launcherLog = Join-Path $runtimeDirectory 'launcher.log'
 $backendUrl = 'http://127.0.0.1:8081/api/auth/me'
-$frontendUrl = 'http://127.0.0.1:5173'
+$frontendHealthUrl = 'http://127.0.0.1:5173'
+$frontendBrowserUrl = 'http://localhost:5173'
 
 New-Item -ItemType Directory -Path $runtimeDirectory -Force | Out-Null
 
@@ -211,7 +212,7 @@ try {
         $state.BackendLog = $backendError
     }
 
-    if (-not (Test-HttpEndpoint -Url $frontendUrl)) {
+    if (-not (Test-HttpEndpoint -Url $frontendHealthUrl)) {
         $frontendOutput = Join-Path $runtimeDirectory "frontend-$timestamp.out.log"
         $frontendError = Join-Path $runtimeDirectory "frontend-$timestamp.err.log"
         Write-LauncherLog 'Demarrage du frontend Vue.'
@@ -233,13 +234,13 @@ try {
     if (-not (Wait-ForEndpoint -Url $backendUrl -TimeoutSeconds 180 -StartedProcess $backendProcess)) {
         throw "Le backend n'a pas pu demarrer. Consultez les journaux dans : $runtimeDirectory"
     }
-    if (-not (Wait-ForEndpoint -Url $frontendUrl -TimeoutSeconds 90 -StartedProcess $frontendProcess)) {
+    if (-not (Wait-ForEndpoint -Url $frontendHealthUrl -TimeoutSeconds 90 -StartedProcess $frontendProcess)) {
         throw "Le frontend n'a pas pu demarrer. Consultez les journaux dans : $runtimeDirectory"
     }
 
     Write-LauncherLog 'Terra Sana est disponible.'
     if (-not $NoBrowser) {
-        Start-Process $frontendUrl | Out-Null
+        Start-Process $frontendBrowserUrl | Out-Null
     }
     Write-Output 'READY'
 } catch {

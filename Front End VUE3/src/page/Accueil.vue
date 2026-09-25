@@ -58,21 +58,15 @@
 
 <script setup>
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import siteLogo from '../assets/branding/site-logo.png'
+import { useAuthStore } from '../stores/authStore'
 
-const props = defineProps({
-  isConnected: {
-    type: Boolean,
-    default: false
-  },
-  user: {
-    type: Object,
-    default: null
-  }
-})
+const authStore = useAuthStore()
+const { isAuthenticated: isConnected, user } = storeToRefs(authStore)
 
-const connectedTarget = computed(() => props.user?.role === 'admin' ? '/admin' : '/catalogue')
-const connectedLabel = computed(() => props.user?.role === 'admin' ? 'Ouvrir l administration' : 'Ouvrir le catalogue')
+const connectedTarget = computed(() => user.value?.role === 'admin' ? '/admin' : '/catalogue')
+const connectedLabel = computed(() => user.value?.role === 'admin' ? 'Ouvrir l administration' : 'Ouvrir le catalogue')
 </script>
 
 <style scoped>

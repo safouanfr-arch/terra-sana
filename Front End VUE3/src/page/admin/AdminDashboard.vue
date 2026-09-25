@@ -89,19 +89,14 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { adminDashboardApi, getApiErrorMessage, handleApiAccessError } from '../../services/api.js'
 import { useAuthStore } from '../../stores/authStore'
 
-const props = defineProps({
-  user: {
-    type: Object,
-    required: true
-  }
-})
-
 const router = useRouter()
 const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 const apiError = ref('')
 const dashboardStats = ref({
   membresTotal: 0,
