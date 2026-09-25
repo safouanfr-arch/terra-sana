@@ -12,12 +12,21 @@ $powerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powersh
 $icon = Join-Path $PSScriptRoot 'terra-sana.ico'
 $startScript = Join-Path $PSScriptRoot 'Start-TerraSana.ps1'
 $stopScript = Join-Path $PSScriptRoot 'Stop-TerraSana.ps1'
+$stopShortcutName = 'Arr' + [char]0x00EA + 'ter Terra Sana'
 
 if (-not (Test-Path $icon)) {
     throw "Icone introuvable : $icon"
 }
 
 $shell = New-Object -ComObject WScript.Shell
+$legacyStopShortcut = Join-Path $desktop 'Arreter Terra Sana.lnk'
+$misencodedStopShortcut = Join-Path $desktop ('Arr' + [char]0x00C3 + [char]0x00AA + 'ter Terra Sana.lnk')
+
+foreach ($oldShortcut in @($legacyStopShortcut, $misencodedStopShortcut)) {
+    if (Test-Path $oldShortcut) {
+        Remove-Item -LiteralPath $oldShortcut -Force
+    }
+}
 
 function New-TerraSanaShortcut {
     param(
@@ -42,7 +51,7 @@ New-TerraSanaShortcut `
     -Description 'Demarrer Terra Sana et ouvrir l application'
 
 New-TerraSanaShortcut `
-    -Name 'Arreter Terra Sana' `
+    -Name $stopShortcutName `
     -Script $stopScript `
     -Description 'Arreter les services Terra Sana'
 
