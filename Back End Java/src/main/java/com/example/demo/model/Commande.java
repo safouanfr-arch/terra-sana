@@ -56,7 +56,7 @@ public class Commande {
     @Column(name = "numero", length = 50, nullable = false, unique = true)
     private String numero;
 
-    @Column(name = "code_retrait", length = 20)
+    @Column(name = "code_retrait", length = 20, unique = true)
     private String codeRetrait;
 
     @Enumerated(EnumType.STRING)
@@ -89,6 +89,13 @@ public class Commande {
 
     @Column(name = "commentaire", columnDefinition = "TEXT")
     private String commentaire;
+
+    @Builder.Default
+    @Column(name = "incident_preparation", nullable = false, columnDefinition = "boolean default false")
+    private boolean incidentPreparation = false;
+
+    @Column(name = "motif_incident_preparation", length = 500)
+    private String motifIncidentPreparation;
 
     @Column(name = "annulation")
     private LocalDateTime dateAnnulation;

@@ -57,15 +57,15 @@
               <div v-if="module.stats" class="module-stats">
                 <span v-for="(value, key) in module.stats" :key="key" class="stat-badge">
                   <template v-if="key === 'pending'">En attente: </template>
-                  <template v-else-if="key === 'total'">Total: </template>
+                  <template v-else-if="key === 'total'">Total : </template>
                   <template v-else-if="key === 'suspended'">Suspendus: </template>
                   <template v-else-if="key === 'lowStock'">Stock bas: </template>
-                  <template v-else-if="key === 'active'">Actifs: </template>
-                  <template v-else-if="key === 'confirmed'">Confirmees: </template>
-                  <template v-else-if="key === 'inPrep'">Preparation: </template>
-                  <template v-else-if="key === 'ready'">Pretes: </template>
-                  <template v-else-if="key === 'distributed'">Distribuees: </template>
-                  <template v-else-if="key === 'cancelled'">Annulees: </template>
+                  <template v-else-if="key === 'active'">Actifs : </template>
+                  <template v-else-if="key === 'confirmed'">Confirmées : </template>
+                  <template v-else-if="key === 'inPrep'">En préparation : </template>
+                  <template v-else-if="key === 'ready'">Prêtes : </template>
+                  <template v-else-if="key === 'distributed'">Retirées : </template>
+                  <template v-else-if="key === 'cancelled'">Annulées : </template>
                   <strong>{{ value }}</strong>
                 </span>
               </div>
@@ -80,7 +80,7 @@
       <div class="info-card">
         <h3>Informations</h3>
         <p>
-          Ce tableau de bord affiche maintenant les donnees reelles du backend pour les domaines critiques.
+          Ce tableau de bord présente les données réelles de l'application pour les domaines critiques.
         </p>
       </div>
     </div>
@@ -136,9 +136,9 @@ async function loadStats() {
 const adminModules = computed(() => [
   {
     id: 1,
-    title: "Demandes d'adhesion",
+    title: "Demandes d'adhésion",
     icon: 'DA',
-    description: "Valider ou refuser les nouvelles demandes d'adhesion",
+    description: "Valider ou refuser les nouvelles demandes d'adhésion",
     path: '/admin/demandes-adhesion',
     color: '#456e5d',
     stats: { pending: dashboardStats.value.demandesEnAttente, total: dashboardStats.value.demandesTotal }
@@ -156,16 +156,16 @@ const adminModules = computed(() => [
     id: 3,
     title: 'Produits',
     icon: 'PR',
-    description: 'Creer, modifier et supprimer des produits',
+    description: 'Créer, modifier et supprimer des produits',
     path: '/admin/produits',
     color: '#667044',
     stats: { total: dashboardStats.value.produitsTotal, active: dashboardStats.value.produitsActifs }
   },
   {
     id: 4,
-    title: 'Categories',
+    title: 'Catégories',
     icon: 'CT',
-    description: 'Gerer les categories de produits',
+    description: 'Gérer les catégories de produits',
     path: '/admin/categories',
     color: '#58683d',
     stats: { total: dashboardStats.value.categoriesTotal }
@@ -174,7 +174,7 @@ const adminModules = computed(() => [
     id: 5,
     title: 'Points de collecte',
     icon: 'PC',
-    description: 'Gerer les lieux de retrait des commandes',
+    description: 'Gérer les lieux de retrait des commandes',
     path: '/admin/points-collecte',
     color: '#4e5f3a',
     stats: { total: dashboardStats.value.pointsCollecteTotal }
@@ -183,7 +183,7 @@ const adminModules = computed(() => [
     id: 6,
     title: 'Commandes',
     icon: 'CM',
-    description: 'Suivi, historique, details, statuts et export CSV',
+    description: 'Suivi, historique, détails, statuts et export CSV',
     path: '/admin/commandes',
     color: '#365b67',
     stats: {
@@ -196,7 +196,7 @@ const adminModules = computed(() => [
     id: 7,
     title: 'Stocks',
     icon: 'ST',
-    description: 'Consulter et mettre a jour les niveaux de stock',
+    description: 'Consulter et mettre à jour les niveaux de stock',
     path: '/admin/stocks',
     color: '#5c6a3d',
     stats: { lowStock: dashboardStats.value.lowStock, total: dashboardStats.value.produitsTotal }
@@ -205,7 +205,7 @@ const adminModules = computed(() => [
     id: 8,
     title: 'Promotions',
     icon: 'PM',
-    description: 'Creer et gerer les offres promotionnelles',
+    description: 'Créer et gérer les offres promotionnelles',
     path: '/admin/promotions',
     color: '#6d7042',
     stats: null
@@ -214,14 +214,14 @@ const adminModules = computed(() => [
     id: 9,
     title: 'Export des ventes',
     icon: 'EX',
-    description: 'Exporter les donnees de vente en CSV',
+    description: 'Exporter les données de vente en CSV',
     path: '/admin/export-ventes',
     color: '#6f5b4d',
     stats: null
   },
   {
     id: 10,
-    title: 'Tableaux de preparation',
+    title: 'Tableaux de préparation',
     icon: 'TP',
     description: 'Pick-lists, totalisations par produit et impression',
     path: '/admin/tableaux-preparation',
@@ -230,18 +230,18 @@ const adminModules = computed(() => [
   },
   {
     id: 12,
-    title: 'Parametres emails',
+    title: 'Paramètres des emails',
     icon: 'EM',
-    description: 'Configuration des modeles d emails',
+    description: "Configuration des modèles d'emails",
     path: '/admin/parametres-emails',
     color: '#735b50',
     stats: null
   },
   {
     id: 13,
-    title: 'Emails envoyes',
+    title: 'Emails envoyés',
     icon: 'HI',
-    description: 'Historique des emails envoyes par les evenements metier',
+    description: 'Historique des emails envoyés par les événements métier',
     path: '/admin/emails-generes',
     color: '#654e47',
     stats: null
@@ -258,7 +258,7 @@ const adminSections = computed(() => {
     {
       id: 'membres',
       kicker: 'Comptes',
-      title: 'Membres et adhesions',
+      title: 'Membres et adhésions',
       description: 'Traitement des demandes, comptes actifs et suspensions.',
       colors: { from: '#eef5ef', to: '#dcebe3', border: '#2f5d4f' },
       modules: byId(1, 2)
@@ -267,7 +267,7 @@ const adminSections = computed(() => {
       id: 'catalogue',
       kicker: 'Catalogue',
       title: 'Produits, stocks et offres',
-      description: 'Gestion des articles visibles, categories, stocks et promotions.',
+      description: 'Gestion des articles visibles, catégories, stocks et promotions.',
       colors: { from: '#f3f5ea', to: '#e4ead3', border: '#667044' },
       modules: byId(3, 4, 7, 8)
     },
@@ -275,7 +275,7 @@ const adminSections = computed(() => {
       id: 'commandes',
       kicker: 'Operations',
       title: 'Commandes et retraits',
-      description: 'Suivi des commandes, historique, points de collecte et preparation.',
+      description: 'Suivi des commandes, historique, points de collecte et préparation.',
       colors: { from: '#edf3f4', to: '#dbe8eb', border: '#365b67' },
       modules: byId(5, 6, 10)
     },

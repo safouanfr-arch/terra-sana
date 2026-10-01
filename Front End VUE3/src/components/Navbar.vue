@@ -1,11 +1,11 @@
 <template>
   <nav class="navbar">
     <div class="nav-brand">
-      <router-link to="/" class="brand-link">
+      <router-link :to="homePath" class="brand-link">
         <img :src="siteLogo" alt="Terra Sana" class="brand-logo" />
         <div class="brand-copy">
           <strong>Terra Sana</strong>
-          <span>Cooperative e-commerce locale</span>
+          <span>Coopérative e-commerce locale</span>
         </div>
       </router-link>
     </div>
@@ -17,7 +17,7 @@
           class="nav-link"
           active-class="active"
         >
-          Demande d'adhesion
+          Demande d'adhésion
         </router-link>
         <router-link
           to="/connexion"
@@ -40,6 +40,13 @@
         </template>
 
         <template v-else>
+          <router-link
+            to="/membre"
+            class="nav-link"
+            active-class="active"
+          >
+            Accueil
+          </router-link>
           <router-link
             to="/catalogue"
             class="nav-link"
@@ -89,7 +96,7 @@
           <span class="user-email">{{ user?.email }}</span>
         </span>
         <button @click="$emit('logout')" class="logout-btn">
-          Deconnexion
+          Déconnexion
         </button>
       </template>
     </div>
@@ -97,9 +104,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import siteLogo from '../assets/branding/site-logo.png'
 
-defineProps({
+const props = defineProps({
   isConnected: {
     type: Boolean,
     required: true
@@ -111,6 +119,11 @@ defineProps({
 })
 
 defineEmits(['logout'])
+
+const homePath = computed(() => {
+  if (!props.isConnected) return '/'
+  return props.user?.role === 'admin' ? '/admin' : '/membre'
+})
 </script>
 
 <style scoped>

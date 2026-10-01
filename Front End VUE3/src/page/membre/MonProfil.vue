@@ -3,7 +3,7 @@
     <div class="profil-header">
       <div>
         <h1>Mon profil</h1>
-        <p>Gerez vos informations personnelles et votre mot de passe.</p>
+        <p>Gérez vos informations personnelles et votre mot de passe.</p>
       </div>
       <router-link to="/catalogue" class="btn btn-secondary">
         Retour au catalogue
@@ -25,7 +25,7 @@
       <div v-if="activeTab === 'profil'" class="tab-content">
         <form class="profil-form" @submit.prevent="handleProfilSubmit">
           <div v-if="profilSaved" class="alert alert-success">
-            Vos informations ont ete mises a jour.
+            Vos informations ont été mises à jour.
           </div>
 
           <div class="form-section">
@@ -38,7 +38,7 @@
               </div>
 
               <div class="form-group">
-                <label for="prenom">Prenom *</label>
+                <label for="prenom">Prénom *</label>
                 <input id="prenom" v-model="profilData.prenom" type="text" required />
               </div>
             </div>
@@ -49,7 +49,7 @@
             </div>
 
             <div class="form-group">
-              <label for="telephone">Telephone *</label>
+              <label for="telephone">Téléphone *</label>
               <input id="telephone" v-model="profilData.telephone" type="tel" required />
             </div>
           </div>
@@ -91,7 +91,7 @@
       <div v-if="activeTab === 'password'" class="tab-content">
         <form class="password-form" @submit.prevent="handlePasswordSubmit">
           <div v-if="passwordSaved" class="alert alert-success">
-            Votre mot de passe a ete modifie.
+            Votre mot de passe a été modifié.
           </div>
 
           <div class="form-section">
@@ -143,7 +143,7 @@
               <p><strong>Exigences du mot de passe :</strong></p>
               <div class="requirements-list">
                 <div :class="['requirement', { met: passwordData.newPassword.length >= 8 }]">
-                  Au moins 8 caracteres
+                  Au moins 8 caractères
                 </div>
                 <div :class="['requirement', { met: /[A-Z]/.test(passwordData.newPassword) }]">
                   Au moins une majuscule
@@ -155,7 +155,7 @@
                   Au moins un chiffre
                 </div>
                 <div :class="['requirement', { met: /[^A-Za-z0-9]/.test(passwordData.newPassword) }]">
-                  Au moins un caractere special
+                  Au moins un caractère spécial
                 </div>
               </div>
             </div>
@@ -181,7 +181,7 @@
 
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" :disabled="passwordLoading">
-              {{ passwordLoading ? 'Mise a jour...' : 'Modifier le mot de passe' }}
+              {{ passwordLoading ? 'Mise à jour...' : 'Modifier le mot de passe' }}
             </button>
           </div>
         </form>
@@ -282,11 +282,11 @@ async function handleProfilSubmit() {
 
 function validatePassword(password) {
   const errors = []
-  if (password.length < 8) errors.push('Au moins 8 caracteres')
+  if (password.length < 8) errors.push('Au moins 8 caractères')
   if (!/[A-Z]/.test(password)) errors.push('Au moins une majuscule')
   if (!/[a-z]/.test(password)) errors.push('Au moins une minuscule')
   if (!/[0-9]/.test(password)) errors.push('Au moins un chiffre')
-  if (!/[^A-Za-z0-9]/.test(password)) errors.push('Au moins un caractere special')
+  if (!/[^A-Za-z0-9]/.test(password)) errors.push('Au moins un caractère spécial')
   return errors
 }
 

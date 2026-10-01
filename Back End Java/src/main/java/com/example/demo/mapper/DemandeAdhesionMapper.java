@@ -39,6 +39,8 @@ public final class DemandeAdhesionMapper {
                 .statut(entity.getStatut())
                 .dateSoumission(entity.getDateSoumission())
                 .dateTraitement(entity.getDateTraitement())
+                .conditionsAccepteesAt(entity.getConditionsAccepteesAt())
+                .conditionsVersion(entity.getConditionsVersion())
                 .administrateurEmail(entity.getAdministrateur() != null ? entity.getAdministrateur().getEmail() : null)
                 .build();
     }

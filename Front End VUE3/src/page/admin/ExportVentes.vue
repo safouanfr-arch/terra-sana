@@ -2,9 +2,9 @@
   <div class="admin-page export-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link"><- Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">← Retour au tableau de bord</router-link>
         <h1>Export des ventes</h1>
-        <p>Generez un export sur base des vraies commandes backend.</p>
+        <p>Générez un export à partir des commandes enregistrées.</p>
       </div>
     </div>
 
@@ -16,7 +16,7 @@
         <h2>Configuration</h2>
 
         <div class="form-group">
-          <label for="date-debut">Date de debut</label>
+          <label for="date-debut">Date de début</label>
           <input id="date-debut" v-model="dateDebut" type="date" />
         </div>
 
@@ -36,12 +36,12 @@
         <div class="form-group">
           <label for="filter-statut">Statut</label>
           <select id="filter-statut" v-model="filterStatut">
-            <option value="VALIDES">Toutes les commandes non annulees</option>
-            <option value="CONFIRMED">Confirmees</option>
-            <option value="IN_PREP">En preparation</option>
-            <option value="READY">Pretes</option>
-            <option value="DISTRIBUTED">Distribuees</option>
-            <option value="CANCELLED">Annulees</option>
+            <option value="VALIDES">Toutes les commandes non annulées</option>
+            <option value="CONFIRMED">Confirmées</option>
+            <option value="IN_PREP">En préparation</option>
+            <option value="READY">Prêtes</option>
+            <option value="DISTRIBUTED">Retirées</option>
+            <option value="CANCELLED">Annulées</option>
           </select>
         </div>
 
@@ -67,13 +67,13 @@
 
       <section class="preview-panel">
         <div class="panel-header">
-          <h2>Apercu</h2>
+          <h2>Aperçu</h2>
           <span>{{ filteredCommandes.length }} commande(s)</span>
         </div>
 
         <div v-if="loading" class="empty-state">
           <h3>Chargement des ventes</h3>
-          <p>Les donnees reelles du backend sont en cours de chargement.</p>
+          <p>Les données de vente sont en cours de chargement.</p>
         </div>
 
         <template v-else>
@@ -97,17 +97,17 @@
           </div>
 
           <div class="info-card">
-            <h3>Perimetre de l'export</h3>
+            <h3>Périmètre de l'export</h3>
             <ul>
-              <li>Les chiffres proviennent des commandes admin backend.</li>
-              <li>Par defaut, les commandes annulees sont exclues.</li>
-              <li>Le point de collecte et la periode peuvent etre filtres avant export.</li>
+              <li>Les chiffres proviennent des commandes enregistrées dans l'application.</li>
+              <li>Par défaut, les commandes annulées sont exclues.</li>
+              <li>Le point de collecte et la période peuvent être filtrés avant l'export.</li>
             </ul>
           </div>
 
           <div v-if="filteredCommandes.length === 0" class="empty-state">
             <h3>Aucune commande pour ces filtres</h3>
-            <p>Adaptez la periode ou le statut pour generer un export.</p>
+            <p>Adaptez la période ou le statut pour générer un export.</p>
           </div>
 
           <div v-else class="preview-sample">
@@ -266,9 +266,9 @@ function handleExport() {
       downloadCsv(buildFileName('csv'), buildCsvRows())
     }
 
-    successMessage.value = `Export ${format.value.toUpperCase()} genere avec succes.`
+    successMessage.value = `Export ${format.value.toUpperCase()} généré avec succès.`
   } catch (error) {
-    apiError.value = error.message || 'Impossible de generer le fichier.'
+    apiError.value = error.message || 'Impossible de générer le fichier.'
   } finally {
     exporting.value = false
   }
@@ -324,7 +324,7 @@ function buildCsvRows() {
 
   addCsvSection(rows, 'Terra Sana - Export des ventes')
   addCsvKeyValues(rows, [
-    ['Genere le', formatCsvDateTime(new Date())],
+    ['Généré le', formatCsvDateTime(new Date())],
     ['Commandes exportees', stats.value.nbCommandes],
     ['Clients distincts', stats.value.nbClients],
     ['Panier moyen (EUR)', formatCsvMoney(stats.value.panierMoyen)],
@@ -333,11 +333,11 @@ function buildCsvRows() {
 
   addCsvSection(rows, 'Filtres appliques')
   addCsvKeyValues(rows, [
-    ['Date de debut', dateDebut.value ? formatCsvDate(dateDebut.value) : 'Non limitee'],
-    ['Date de fin', dateFin.value ? formatCsvDate(dateFin.value) : 'Non limitee'],
+    ['Date de début', dateDebut.value ? formatCsvDate(dateDebut.value) : 'Non limitée'],
+    ['Date de fin', dateFin.value ? formatCsvDate(dateFin.value) : 'Non limitée'],
     ['Point de collecte', filterPoint.value || 'Tous les points'],
     ['Statut', getStatutFilterLabel()],
-    ['Detail des commandes', includeDetails.value ? 'Oui' : 'Non']
+    ['Détail des commandes', includeDetails.value ? 'Oui' : 'Non']
   ])
 
   addCsvSection(rows, 'Synthese par jour')
@@ -352,10 +352,10 @@ function buildCsvRows() {
 
   addCsvSection(rows, 'Commandes')
   rows.push([
-    'No commande',
+    'N° commande',
     'Date commande',
     'Date retrait',
-    'Creneau',
+    'Créneau',
     'Membre',
     'Email',
     'Point de collecte',
@@ -383,13 +383,13 @@ function buildCsvRows() {
     ])
   }
 
-  addCsvSection(rows, 'Details des lignes de commande')
+  addCsvSection(rows, 'Détails des lignes de commande')
   rows.push([
-    'No commande',
+    'N° commande',
     'Membre',
     'Produit',
-    'Quantite',
-    'Unite',
+    'Quantité',
+    'Unité',
     'Prix unitaire TTC (EUR)',
     'TVA (%)',
     'Total ligne TTC (EUR)'
@@ -490,17 +490,17 @@ function getProduitTotal(produit) {
 
 function getStatutLabel(statut) {
   const map = {
-    CONFIRMED: 'Confirmee',
-    IN_PREP: 'En preparation',
-    READY: 'Prete',
-    DISTRIBUTED: 'Distribuee',
-    CANCELLED: 'Annulee'
+    CONFIRMED: 'Confirmée',
+    IN_PREP: 'En préparation',
+    READY: 'Prête',
+    DISTRIBUTED: 'Retirée',
+    CANCELLED: 'Annulée'
   }
   return map[statut] || statut
 }
 
 function getStatutFilterLabel() {
-  if (filterStatut.value === 'VALIDES') return 'Toutes les commandes non annulees'
+  if (filterStatut.value === 'VALIDES') return 'Toutes les commandes non annulées'
   return getStatutLabel(filterStatut.value)
 }
 </script>

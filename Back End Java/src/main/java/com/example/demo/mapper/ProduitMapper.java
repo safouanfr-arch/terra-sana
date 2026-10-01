@@ -47,7 +47,6 @@ public class ProduitMapper {
         if (dto.getPrixUnitaire() != null) produit.setPrixUnitaire(dto.getPrixUnitaire());
         if (dto.getUnite() != null) produit.setUnite(dto.getUnite());
         if (dto.getTauxTva() != null) produit.setTauxTva(dto.getTauxTva());
-        if (dto.getStockActuel() != null) produit.setStockActuel(dto.getStockActuel());
         if (dto.getImages() != null) produit.setImages(dto.getImages());
         if (dto.getActif() != null) produit.setActif(dto.getActif());
         if (dto.getTagsAlimentaires() != null) produit.setTagsAlimentaires(toTagSet(dto.getTagsAlimentaires()));

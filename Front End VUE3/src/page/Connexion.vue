@@ -2,7 +2,7 @@
   <div class="page-container">
     <div class="form-header">
       <h1>Connexion</h1>
-      <p>Accedez a votre espace membre</p>
+      <p>Accédez à votre espace membre</p>
     </div>
 
     <div class="auth-container">
@@ -69,7 +69,7 @@
 
         <div class="auth-links">
           <router-link to="/reinitialisation-mot-de-passe" class="link">
-            Mot de passe oublie ?
+            Mot de passe oublié ?
           </router-link>
         </div>
       </form>
@@ -80,19 +80,19 @@
 
       <div class="auth-alternative">
         <h3>Pas encore membre ?</h3>
-        <p>Rejoignez notre communaute en soumettant une demande d'adhesion.</p>
+        <p>Rejoignez notre communauté en soumettant une demande d'adhésion.</p>
         <router-link to="/demande-adhesion" class="btn btn-secondary">
-          Demande d'adhesion
+          Demande d'adhésion
         </router-link>
       </div>
     </div>
 
     <div class="demo-info">
       <div class="info-card">
-        <h4>Information de connexion</h4>
+        <h4>Informations de connexion</h4>
         <p>
           Utilisez un compte administrateur ou membre existant en base.
-          Les comptes de demonstration actuels sont
+          Les comptes de démonstration actuels sont
           <strong>admin.demo@terrasana.test</strong> et
           <strong>membre.demo@terrasana.test</strong> avec le mot de passe
           <strong>demo-password</strong>.

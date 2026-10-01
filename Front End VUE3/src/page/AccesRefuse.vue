@@ -41,7 +41,7 @@ const primaryTarget = computed(() => {
 })
 
 const primaryLabel = computed(() => {
-  if (authStore.isAuthenticated) return 'Retour a mon espace'
+  if (authStore.isAuthenticated) return 'Retour à mon espace'
   return 'Se connecter'
 })
 </script>

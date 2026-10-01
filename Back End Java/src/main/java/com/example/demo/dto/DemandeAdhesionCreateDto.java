@@ -3,6 +3,7 @@ package com.example.demo.dto;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,6 +43,7 @@ public class DemandeAdhesionCreateDto {
 
     private String message;
 
+    @NotNull(message = "L'acceptation des conditions est obligatoire.")
     @AssertTrue(message = "Les conditions doivent etre acceptees.")
     private Boolean accepteConditions;
 }

@@ -2,33 +2,19 @@
   <div class="page-container">
     <div v-if="step === 'success'" class="success-message">
       <div class="success-icon">OK</div>
-      <h2>Lien de reinitialisation genere</h2>
-      <p>Comme aucun email reel n'est encore envoye, le lien est affiche ici pour finaliser le flux.</p>
-
-      <div class="email-display">
-        <strong>{{ response.email }}</strong>
-      </div>
-
-      <div class="success-details">
-        <p><strong>Lien :</strong></p>
-        <p class="reset-link">{{ response.resetLink }}</p>
-      </div>
-
-      <div class="actions">
-        <a :href="response.resetLink" class="btn btn-primary">Ouvrir le lien</a>
-        <button @click="copyLink" class="btn btn-secondary">Copier le lien</button>
-      </div>
+      <h2>Demande prise en compte</h2>
+      <p>{{ responseMessage }}</p>
 
       <div class="actions secondary-actions">
-        <router-link to="/connexion" class="link">Retour a la connexion</router-link>
+        <router-link to="/connexion" class="link">Retour à la connexion</router-link>
         <button @click="handleNewRequest" class="link-button">Nouvelle demande</button>
       </div>
     </div>
 
     <template v-else>
       <div class="form-header">
-        <h1>Reinitialisation du mot de passe</h1>
-        <p>Saisissez votre email pour generer un lien de reinitialisation.</p>
+        <h1>Réinitialisation du mot de passe</h1>
+        <p>Saisissez votre email pour recevoir un lien de réinitialisation.</p>
       </div>
 
       <div v-if="apiError" class="alert alert-error">{{ apiError }}</div>
@@ -36,10 +22,9 @@
       <form @submit.prevent="handleSubmit" class="reset-form">
         <div class="info-section">
           <div class="info-card">
-            <h3>Comment ca marche ?</h3>
+            <h3>Comment ça marche ?</h3>
             <p>
-              Le backend genere un lien de creation de mot de passe valable 24 heures.
-              Pour ce TFE, le lien est affiche directement a l'ecran.
+              Si un compte correspond à cette adresse, un lien valable 24 heures sera envoyé par email.
             </p>
           </div>
         </div>
@@ -60,13 +45,13 @@
 
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" :disabled="loading">
-            {{ loading ? 'Generation en cours...' : 'Generer le lien de reinitialisation' }}
+            {{ loading ? 'Envoi en cours...' : 'Envoyer la demande' }}
           </button>
         </div>
 
         <div class="auth-links">
           <router-link to="/connexion" class="link">
-            Retour a la connexion
+            Retour à la connexion
           </router-link>
         </div>
       </form>
@@ -81,14 +66,12 @@ import { authApi, getApiErrorMessage } from '../services/api.js'
 const step = ref('email')
 const loading = ref(false)
 const apiError = ref('')
+const genericMessage = 'Si un compte correspond à cette adresse, un email de réinitialisation a été envoyé.'
+const responseMessage = ref('')
 const formData = reactive({
   email: ''
 })
 const errors = reactive({})
-const response = reactive({
-  email: '',
-  resetLink: ''
-})
 
 function validateEmail() {
   const newErrors = {}
@@ -113,8 +96,7 @@ async function handleSubmit() {
   loading.value = true
   try {
     const result = await authApi.requestPasswordReset(formData.email)
-    response.email = result.email || formData.email
-    response.resetLink = result.resetLink || ''
+    responseMessage.value = result.message || genericMessage
     step.value = 'success'
   } catch (error) {
     apiError.value = getApiErrorMessage(error)
@@ -123,29 +105,16 @@ async function handleSubmit() {
   }
 }
 
-async function copyLink() {
-  try {
-    await navigator.clipboard.writeText(response.resetLink)
-  } catch {
-    apiError.value = 'Impossible de copier automatiquement le lien.'
-  }
-}
-
 function handleNewRequest() {
   step.value = 'email'
   formData.email = ''
-  response.email = ''
-  response.resetLink = ''
+  responseMessage.value = ''
   apiError.value = ''
   Object.keys(errors).forEach(key => delete errors[key])
 }
 </script>
 
 <style scoped>
-.reset-link {
-  word-break: break-all;
-}
-
 .secondary-actions {
   gap: 1rem;
 }

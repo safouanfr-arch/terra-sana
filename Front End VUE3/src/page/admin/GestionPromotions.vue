@@ -2,9 +2,9 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
         <h1>Gestion des promotions</h1>
-        <p>Creation, edition et ciblage backend des promotions.</p>
+        <p>Création, édition et ciblage des promotions.</p>
       </div>
       <button class="btn btn-primary" @click="handleAdd">Nouvelle promotion</button>
     </div>
@@ -29,7 +29,7 @@
           <tr>
             <th>Nom</th>
             <th>Reduction</th>
-            <th>Periode</th>
+            <th>Période</th>
             <th>Ciblage</th>
             <th>Statut</th>
             <th>Actions</th>
@@ -84,7 +84,7 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label>Type de reduction *</label>
+              <label>Type de réduction *</label>
               <select v-model="formData.type">
                 <option value="pourcentage">Pourcentage</option>
                 <option value="montant">Montant fixe</option>
@@ -100,14 +100,14 @@
                 :placeholder="formData.type === 'pourcentage' ? 'Ex: 10' : 'Ex: 5.00'"
               />
               <small v-if="formData.type === 'montant'" class="field-help">
-                Montant retire du prix TTC affiche au client.
+                Montant retiré du prix TTC affiché au client.
               </small>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Date de debut *</label>
+              <label>Date de début *</label>
               <input v-model="formData.dateDebut" type="date" />
             </div>
             <div class="form-group">
@@ -125,7 +125,7 @@
 
           <div class="form-section">
             <h3>Ciblage de la promotion</h3>
-            <p class="help-text">Vous pouvez viser des produits precis, des categories entieres, ou les deux.</p>
+            <p class="help-text">Vous pouvez cibler des produits précis, des catégories entières, ou les deux.</p>
 
             <div class="form-group">
               <label>Produits specifiques</label>
@@ -138,7 +138,7 @@
             </div>
 
             <div class="form-group">
-              <label>Categories entieres</label>
+              <label>Catégories entières</label>
               <div class="checkbox-grid">
                 <label v-for="categorie in allCategories" :key="categorie.id" class="checkbox-item">
                   <input type="checkbox" :value="categorie.id" v-model="formData.categories" />
@@ -151,7 +151,7 @@
               La promotion touchera <strong>{{ affectedProductsCount }}</strong> produit(s).
             </div>
             <div v-else class="alert alert-warning">
-              Aucun produit selectionne. La promotion sera enregistree mais ne s'appliquera a aucun article.
+              Aucun produit sélectionné. La promotion sera enregistrée mais ne s'appliquera à aucun article.
             </div>
           </div>
         </div>
@@ -279,7 +279,7 @@ async function handleDelete(id) {
   successMessage.value = ''
   try {
     await promotionsApi.remove(id)
-    successMessage.value = 'Promotion supprimee.'
+    successMessage.value = 'Promotion supprimée.'
     await loadData()
   } catch (error) {
     if (handleSessionError(error)) return
@@ -294,11 +294,11 @@ async function handleSave() {
   successMessage.value = ''
 
   if (!formData.value.nom || !formData.value.dateDebut || !formData.value.dateFin) {
-    apiError.value = 'Nom, dates et reduction sont requis.'
+    apiError.value = 'Le nom, les dates et la réduction sont requis.'
     return
   }
   if (!Number(formData.value.reduction)) {
-    apiError.value = 'La reduction doit etre superieure a zero.'
+    apiError.value = 'La réduction doit être supérieure à zéro.'
     return
   }
 
@@ -306,10 +306,10 @@ async function handleSave() {
   try {
     if (editMode.value && currentPromoId.value) {
       await promotionsApi.update(currentPromoId.value, formData.value)
-      successMessage.value = 'Promotion mise a jour.'
+      successMessage.value = 'Promotion mise à jour.'
     } else {
       await promotionsApi.create(formData.value)
-      successMessage.value = 'Promotion creee.'
+      successMessage.value = 'Promotion créée.'
     }
     closeModal()
     await loadData()
@@ -340,7 +340,7 @@ function formatTargeting(promo) {
     parts.push(`${promo.produits.length} produit(s)`)
   }
   if (promo.categories.length > 0) {
-    parts.push(`${promo.categories.length} categorie(s)`)
+    parts.push(`${promo.categories.length} catégorie(s)`)
   }
   return parts.length > 0 ? parts.join(' + ') : 'Aucun ciblage'
 }

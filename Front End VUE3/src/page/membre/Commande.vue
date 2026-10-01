@@ -35,8 +35,8 @@
                 <h3>{{ point.nom }}</h3>
               </div>
               <div class="point-details">
-                <p><strong>Adresse:</strong> {{ point.adresse }}</p>
-                <p><strong>Creneaux:</strong> {{ formatCreneaux(point.creneaux) }}</p>
+                <p><strong>Adresse :</strong> {{ point.adresse }}</p>
+                <p><strong>Créneaux :</strong> {{ formatCreneaux(point.creneaux) }}</p>
               </div>
               <button class="btn btn-secondary" @click.stop="handleSelectPoint(point)">Choisir ce point</button>
             </div>
@@ -45,12 +45,12 @@
 
         <div v-if="step === 2 && selectedPoint" class="step-content">
           <div class="selected-info">
-            <h3>Point de collecte sélectionné:</h3>
+            <h3>Point de collecte sélectionné :</h3>
             <p><strong>{{ selectedPoint.nom }}</strong> - {{ selectedPoint.adresse }}</p>
             <button class="btn-text" @click="step = 1">Changer de point</button>
           </div>
           <h2>Choisissez votre créneau de retrait</h2>
-          <p class="help-text">Les creneaux affiches sont actifs, prevus au moins 24 heures a l'avance et limites a J+8.</p>
+          <p class="help-text">Les créneaux affichés sont actifs, prévus au moins 24 heures à l'avance et limités à J+8.</p>
           <div class="creneaux-grid">
             <div v-for="date in availableDatesWithCreneaux" :key="date.toISOString()" class="date-group">
               <h3 class="date-titre">{{ formatDateLong(date) }}</h3>
@@ -66,7 +66,7 @@
               </div>
             </div>
           </div>
-          <p v-if="availableDatesWithCreneaux.length === 0" class="no-creneau-global">Aucun creneau disponible dans la limite J+8</p>
+          <p v-if="availableDatesWithCreneaux.length === 0" class="no-creneau-global">Aucun créneau disponible dans la limite J+8</p>
         </div>
 
         <div v-if="step === 3 && selectedPoint && selectedCreneau" class="step-content">
@@ -75,10 +75,10 @@
             <div class="detail-section">
               <h3>Informations de retrait</h3>
               <div class="detail-card">
-                <p><strong>Point:</strong> {{ selectedPoint.nom }}</p>
-                <p><strong>Adresse:</strong> {{ selectedPoint.adresse }}</p>
-                <p><strong>Date:</strong> {{ formatDateLong(new Date(selectedDate)) }}</p>
-                <p><strong>Créneau:</strong> {{ selectedCreneau.horaire }}</p>
+                <p><strong>Point :</strong> {{ selectedPoint.nom }}</p>
+                <p><strong>Adresse :</strong> {{ selectedPoint.adresse }}</p>
+                <p><strong>Date :</strong> {{ formatDateLong(new Date(selectedDate)) }}</p>
+                <p><strong>Créneau :</strong> {{ selectedCreneau.horaire }}</p>
               </div>
               <button class="btn-text" @click="step = 2">Modifier</button>
             </div>
@@ -106,9 +106,9 @@
           <div class="alert alert-info" style="margin-top: 1rem;">
             <span class="alert-icon">i</span>
             <div>
-              <p><strong>Rappel important:</strong></p>
+              <p><strong>Rappel important :</strong></p>
               <ul>
-                <li><strong>Paiement sur place au point de collecte</strong> en carte ou en cash.</li>
+                <li><strong>Paiement sur place au point de collecte</strong> par carte ou en espèces.</li>
                 <li><u>Aucun paiement ne se fait via le site</u>.</li>
               </ul>
             </div>
@@ -138,7 +138,7 @@
           </div>
           <div v-if="selectedPoint" class="resume-info-box">
             <p><strong>{{ selectedPoint.nom }}</strong></p>
-            <p v-if="selectedDate && selectedCreneau">{{ formatDateShort(new Date(selectedDate)) }} a {{ selectedCreneau.horaire }}</p>
+            <p v-if="selectedDate && selectedCreneau">{{ formatDateShort(new Date(selectedDate)) }} à {{ selectedCreneau.horaire }}</p>
           </div>
         </div>
       </div>
@@ -315,7 +315,7 @@ const handleConfirmCommande = async () => {
   }
 
   if (!isDateWithinNext7Days(selectedDate.value) || !isCreneauEligible(selectedCreneau.value)) {
-    apiError.value = 'Le creneau doit etre actif, situe au moins 24 heures dans le futur et rester dans la limite J+8.'
+    apiError.value = 'Le créneau doit être actif, situé au moins 24 heures dans le futur et rester dans la limite J+8.'
     step.value = 2
     return
   }

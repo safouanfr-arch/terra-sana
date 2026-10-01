@@ -2,9 +2,9 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
-        <h1>Parametres emails</h1>
-        <p>Configuration backend des modeles d'emails et de l'identite Terra Sana.</p>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
+        <h1>Paramètres des emails</h1>
+        <p>Configuration des modèles d'emails et de l'identité Terra Sana.</p>
       </div>
     </div>
 
@@ -18,7 +18,7 @@
 
     <div v-else class="parametres-emails">
       <div class="card">
-        <h2>Informations generales</h2>
+        <h2>Informations générales</h2>
 
         <div class="form-group">
           <label for="nomEntreprise">Nom de l'entreprise</label>
@@ -31,7 +31,7 @@
         </div>
 
         <div class="form-group">
-          <label for="telephone">Telephone</label>
+          <label for="telephone">Téléphone</label>
           <input id="telephone" v-model="config.telephone" type="tel" class="form-control" />
         </div>
 
@@ -41,7 +41,7 @@
         </div>
 
         <div class="form-group">
-          <label for="mentionsLegales">Mentions legales</label>
+          <label for="mentionsLegales">Mentions légales</label>
           <input id="mentionsLegales" v-model="config.mentionsLegales" type="text" class="form-control" />
         </div>
       </div>
@@ -81,10 +81,10 @@
 
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
           <button class="btn btn-outline" @click="previewTemplate(template)">
-            Previsualiser
+            Prévisualiser
           </button>
           <small v-if="template.updatedAt" class="form-hint">
-            Derniere mise a jour : {{ formatDateTime(template.updatedAt) }}
+            Dernière mise à jour : {{ formatDateTime(template.updatedAt) }}
           </small>
         </div>
       </div>
@@ -125,6 +125,7 @@ const TEMPLATE_ORDER = [
   'ORDER_REMINDER_J1',
   'ORDER_CANCELLATION',
   'ORDER_READY',
+  'MEMBERSHIP_EMAIL_CONFIRMATION',
   'MEMBERSHIP_REQUEST_RECEIVED',
   'MEMBERSHIP_VALIDATION',
   'MEMBERSHIP_REJECTION',
@@ -137,32 +138,35 @@ const TEMPLATE_LABELS = {
   ORDER_CONFIRMATION: 'Email de confirmation de commande',
   ORDER_REMINDER_J1: 'Email de rappel J-1',
   ORDER_CANCELLATION: "Email d'annulation de commande",
-  ORDER_READY: 'Email commande prete',
-  MEMBERSHIP_REQUEST_RECEIVED: "Email de reception d'une demande d'adhesion",
-  MEMBERSHIP_VALIDATION: "Email de validation d'adhesion",
-  MEMBERSHIP_REJECTION: "Email de refus d'adhesion",
-  PASSWORD_SETUP: 'Email de definition ou reinitialisation du mot de passe',
+  ORDER_READY: 'Email de commande prête',
+  MEMBERSHIP_EMAIL_CONFIRMATION: "Email de confirmation de l'adresse d'adhésion",
+  MEMBERSHIP_REQUEST_RECEIVED: "Email de réception d'une demande d'adhésion",
+  MEMBERSHIP_VALIDATION: "Email de validation d'adhésion",
+  MEMBERSHIP_REJECTION: "Email de refus d'adhésion",
+  PASSWORD_SETUP: 'Email de définition ou réinitialisation du mot de passe',
   LOW_STOCK_ALERT: 'Email alerte stock faible',
   OUT_OF_STOCK_ALERT: 'Email rupture de stock'
 }
 
 const TEMPLATE_DESCRIPTIONS = {
-  ORDER_CONFIRMATION: 'Envoye a la creation de la commande.',
-  ORDER_REMINDER_J1: "Envoye manuellement par l'administrateur avant le retrait.",
-  ORDER_CANCELLATION: "Envoye lorsqu'une commande est annulee.",
-  ORDER_READY: 'Envoye quand une commande passe au statut prete.',
-  MEMBERSHIP_REQUEST_RECEIVED: "Envoye a la reception d'une demande d'adhesion.",
-  MEMBERSHIP_VALIDATION: "Envoye quand une demande d'adhesion est acceptee.",
-  MEMBERSHIP_REJECTION: "Envoye quand une demande d'adhesion est refusee.",
-  PASSWORD_SETUP: 'Envoye pour definir ou reinitialiser le mot de passe.',
-  LOW_STOCK_ALERT: 'Envoye quand un produit passe sous le seuil de vigilance.',
-  OUT_OF_STOCK_ALERT: 'Envoye quand un produit tombe en rupture de stock.'
+  ORDER_CONFIRMATION: 'Envoyé à la création de la commande.',
+  ORDER_REMINDER_J1: "Envoyé automatiquement la veille du retrait ; un envoi manuel reste disponible.",
+  ORDER_CANCELLATION: "Envoyé lorsqu'une commande est annulée.",
+  ORDER_READY: 'Envoyé quand une commande passe au statut prête.',
+  MEMBERSHIP_EMAIL_CONFIRMATION: "Envoyé avant que la demande soit transmise à l'administration.",
+  MEMBERSHIP_REQUEST_RECEIVED: "Envoyé après la confirmation de l'adresse email.",
+  MEMBERSHIP_VALIDATION: "Envoyé quand une demande d'adhésion est acceptée.",
+  MEMBERSHIP_REJECTION: "Envoyé quand une demande d'adhésion est refusée.",
+  PASSWORD_SETUP: 'Envoyé pour définir ou réinitialiser le mot de passe.',
+  LOW_STOCK_ALERT: 'Envoyé quand un produit passe sous le seuil de vigilance.',
+  OUT_OF_STOCK_ALERT: 'Envoyé quand un produit tombe en rupture de stock.'
 }
 
 const VARIABLE_HINTS = {
   common: ['{{prenom}}', '{{nom}}', '{{companyName}}', '{{companyEmail}}', '{{companyPhone}}', '{{companyAddress}}', '{{legalMentions}}'],
   order: ['{{numero}}', '{{montant}}', '{{codeRetrait}}', '{{pointCollecte}}', '{{dateRetrait}}', '{{creneauRetrait}}', '{{detailProduits}}'],
   password: ['{{lienMotDePasse}}'],
+  confirmation: ['{{lienConfirmation}}'],
   stock: ['{{produitNom}}', '{{stockActuel}}', '{{seuilStock}}'],
   rejection: ['{{motifRefus}}']
 }
@@ -267,7 +271,7 @@ async function handleSave() {
     ])
     applySettings(settings)
     emailTemplates.value = templates
-    successMessage.value = 'Configuration email enregistree.'
+    successMessage.value = 'Configuration des emails enregistrée.'
   } catch (error) {
     if (handleSessionError(error)) return
     if (!isApiAccessError(error)) {
@@ -327,7 +331,7 @@ function buildPreviewVariables(type) {
 function openHtmlPreview(html) {
   const previewWindow = window.open('', '_blank')
   if (!previewWindow) {
-    apiError.value = 'La previsualisation a ete bloquee par le navigateur.'
+    apiError.value = 'La prévisualisation a été bloquée par le navigateur.'
     return
   }
   previewWindow.document.open()
@@ -351,6 +355,9 @@ function getVariablesHint(type) {
   }
   if (type === 'PASSWORD_SETUP' || type === 'MEMBERSHIP_VALIDATION') {
     variables.push(...VARIABLE_HINTS.password)
+  }
+  if (type === 'MEMBERSHIP_EMAIL_CONFIRMATION') {
+    variables.push(...VARIABLE_HINTS.confirmation)
   }
   if (type === 'LOW_STOCK_ALERT' || type === 'OUT_OF_STOCK_ALERT') {
     variables.push(...VARIABLE_HINTS.stock)

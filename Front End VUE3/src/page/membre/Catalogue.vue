@@ -3,7 +3,7 @@
     <div class="catalogue-header">
       <div>
         <h1>Catalogue des produits</h1>
-        <p>Decouvrez notre selection de produits frais et locaux.</p>
+        <p>Découvrez notre sélection de produits frais et locaux.</p>
       </div>
       <router-link to="/points-retrait" class="btn btn-secondary">
         Voir les prochains retraits
@@ -33,9 +33,9 @@
 
       <div class="filters-row">
         <div class="filter-group">
-          <label for="selectedCategory">Categorie</label>
+          <label for="selectedCategory">Catégorie</label>
           <select id="selectedCategory" v-model="selectedCategory">
-            <option value="tous">Toutes les categories</option>
+            <option value="tous">Toutes les catégories</option>
             <option v-for="cat in categoriesDisponibles" :key="cat.id" :value="cat.nom">
               {{ cat.nom }}
             </option>
@@ -47,7 +47,7 @@
           <select id="sortBy" v-model="sortBy">
             <option value="nom">Nom (A-Z)</option>
             <option value="prix-asc">Prix croissant</option>
-            <option value="prix-desc">Prix decroissant</option>
+            <option value="prix-desc">Prix décroissant</option>
           </select>
         </div>
       </div>
@@ -76,7 +76,7 @@
           :class="['badge-filter', 'badge-vegetarien', { active: selectedBadges.vegetarien }]"
           @click="toggleBadgeFilter('vegetarien')"
         >
-          Vegetarien
+          Végétarien
         </button>
         <button v-if="hasActiveBadgeFilters" class="clear-filters" @click="clearBadgeFilters">
           Effacer les filtres
@@ -86,8 +86,8 @@
 
     <div v-if="produitsFiltres.length === 0" class="empty-state">
       <div class="empty-icon">0</div>
-      <h3>Aucun produit trouve</h3>
-      <p>Essayez de modifier vos criteres de recherche.</p>
+      <h3>Aucun produit trouvé</h3>
+      <p>Essayez de modifier vos critères de recherche.</p>
     </div>
 
     <div v-else class="produits-grid">
@@ -111,7 +111,7 @@
               <span v-if="produit.badges?.bio" class="badge badge-bio" title="Bio">Bio</span>
               <span v-if="produit.badges?.local" class="badge badge-local" title="Local">Local</span>
               <span v-if="produit.badges?.vegan" class="badge badge-vegan" title="Vegan">Vegan</span>
-              <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien" title="Vegetarien">Veg</span>
+              <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien" title="Végétarien">Vég.</span>
             </div>
           </div>
 
@@ -141,7 +141,7 @@
             :class="['btn', 'btn-add-cart', { added: addedToCart === produit.id }]"
             @click.prevent="handleAddToCart(produit, $event)"
           >
-            {{ addedToCart === produit.id ? 'Ajoute' : 'Ajouter au panier' }}
+            {{ addedToCart === produit.id ? 'Ajouté' : 'Ajouter au panier' }}
           </button>
         </div>
       </router-link>

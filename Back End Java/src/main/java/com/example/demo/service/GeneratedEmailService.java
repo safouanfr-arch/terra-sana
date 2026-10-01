@@ -156,7 +156,8 @@ public class GeneratedEmailService {
                 EmailNotificationType.MEMBERSHIP_VALIDATION,
                 safe(demande.getEmail()),
                 variables,
-                new EmailReferences(null, null, null, demande.getId())
+                new EmailReferences(null, null, null, demande.getId()),
+                List.of(lienMotDePasse)
         );
     }
 
@@ -190,6 +191,25 @@ public class GeneratedEmailService {
     }
 
     @Transactional
+    public GeneratedEmailDto generateMembershipEmailConfirmation(
+            DemandeAdhesion demande,
+            String confirmationLink
+    ) {
+        Map<String, String> variables = withCompanyVariables(new LinkedHashMap<>());
+        variables.put("prenom", safe(demande.getPrenom()));
+        variables.put("nom", safe(demande.getNom()));
+        variables.put("lienConfirmation", safe(confirmationLink));
+
+        return generateSingleEmail(
+                EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION,
+                safe(demande.getEmail()),
+                variables,
+                new EmailReferences(null, null, null, demande.getId()),
+                List.of(confirmationLink)
+        );
+    }
+
+    @Transactional
     public GeneratedEmailDto generatePasswordSetup(Membre membre, String lienMotDePasse) {
         Map<String, String> variables = withCompanyVariables(new LinkedHashMap<>());
         variables.put("prenom", safe(membre.getPrenom()));
@@ -200,7 +220,8 @@ public class GeneratedEmailService {
                 EmailNotificationType.PASSWORD_SETUP,
                 safe(membre.getEmail()),
                 variables,
-                new EmailReferences(null, membre.getId(), null, null)
+                new EmailReferences(null, membre.getId(), null, null),
+                List.of(lienMotDePasse)
         );
     }
 
@@ -260,6 +281,16 @@ public class GeneratedEmailService {
             Map<String, String> variables,
             EmailReferences references
     ) {
+        return generateSingleEmail(type, destinataire, variables, references, List.of());
+    }
+
+    private GeneratedEmailDto generateSingleEmail(
+            EmailNotificationType type,
+            String destinataire,
+            Map<String, String> variables,
+            EmailReferences references,
+            List<String> sensitiveValues
+    ) {
         if (destinataire == null || destinataire.isBlank()) {
             return null;
         }
@@ -268,14 +299,16 @@ public class GeneratedEmailService {
             return null;
         }
 
-        String finalBody = ensurePasswordLink(type, rendered.body(), variables);
+        String finalBody = ensureRequiredActionLink(type, rendered.body(), variables);
         String normalizedBody = normalizeBodyHtml(finalBody);
+        String storedSubject = redactSensitiveValues(rendered.subject(), sensitiveValues);
+        String storedBody = redactSensitiveValues(normalizedBody, sensitiveValues);
 
         GeneratedEmail email = GeneratedEmail.builder()
                 .type(type)
                 .destinataire(destinataire)
-                .sujet(rendered.subject())
-                .contenuHtml(normalizedBody)
+                .sujet(storedSubject)
+                .contenuHtml(storedBody)
                 .statutEnvoi(EmailSendStatus.PENDING)
                 .commandeId(references.commandeId())
                 .membreId(references.membreId())
@@ -288,35 +321,51 @@ public class GeneratedEmailService {
 
         EmailSendResult sendResult = emailSenderService.sendHtmlEmail(
                 email.getDestinataire(),
-                email.getSujet(),
-                buildEmailDocument(email.getSujet(), email.getDestinataire(), normalizedBody, null, null, settings)
+                rendered.subject(),
+                buildEmailDocument(rendered.subject(), email.getDestinataire(), normalizedBody, null, null, settings)
         );
         applySendResult(email, sendResult);
 
         return toDto(generatedEmailRepository.save(email));
     }
 
-    private String ensurePasswordLink(
+    private String redactSensitiveValues(String value, List<String> sensitiveValues) {
+        String redacted = value != null ? value : "";
+        for (String sensitiveValue : sensitiveValues) {
+            if (sensitiveValue != null && !sensitiveValue.isBlank()) {
+                redacted = redacted.replace(sensitiveValue, "[lien sensible non conserve]");
+            }
+        }
+        return redacted;
+    }
+
+    private String ensureRequiredActionLink(
             EmailNotificationType type,
             String body,
             Map<String, String> variables
     ) {
-        if (type != EmailNotificationType.MEMBERSHIP_VALIDATION
-                && type != EmailNotificationType.PASSWORD_SETUP) {
+        boolean confirmationEmail = type == EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION;
+        boolean passwordEmail = type == EmailNotificationType.MEMBERSHIP_VALIDATION
+                || type == EmailNotificationType.PASSWORD_SETUP;
+        if (!confirmationEmail && !passwordEmail) {
             return body;
         }
 
-        String passwordLink = variables != null ? variables.get("lienMotDePasse") : null;
-        if (passwordLink == null || passwordLink.isBlank()) {
+        String variableName = confirmationEmail ? "lienConfirmation" : "lienMotDePasse";
+        String link = variables != null ? variables.get(variableName) : null;
+        if (link == null || link.isBlank()) {
             return body;
         }
 
         String existingBody = body == null ? "" : body;
-        if (existingBody.contains(passwordLink)) {
+        if (existingBody.contains(link)) {
             return existingBody;
         }
 
-        return existingBody + "\n\nLien de definition du mot de passe :\n" + passwordLink;
+        String label = confirmationEmail
+                ? "Lien de confirmation de l'adresse email :"
+                : "Lien de definition du mot de passe :";
+        return existingBody + "\n\n" + label + "\n" + link;
     }
 
     private void applySendResult(GeneratedEmail email, EmailSendResult sendResult) {
@@ -691,6 +740,7 @@ public class GeneratedEmailService {
                 .dateEnvoi(entity.getDateEnvoi())
                 .erreurEnvoi(entity.getErreurEnvoi())
                 .commandeId(entity.getCommandeId())
+                .creneauCollecteId(entity.getCreneauCollecteId())
                 .membreId(entity.getMembreId())
                 .produitId(entity.getProduitId())
                 .demandeAdhesionId(entity.getDemandeAdhesionId())

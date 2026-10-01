@@ -2,28 +2,28 @@
   <div class="page-container">
     <div v-if="loading" class="loading-message">
       <div class="spinner"></div>
-      <h2>Verification du lien</h2>
-      <p>Nous verifions votre lien de creation de mot de passe.</p>
+      <h2>Vérification du lien</h2>
+      <p>Nous vérifions votre lien de création de mot de passe.</p>
     </div>
 
     <div v-else-if="!tokenValid" class="error-message">
       <div class="error-icon">X</div>
-      <h2>Lien invalide ou expire</h2>
-      <p>Le lien utilise n'est plus valable.</p>
+      <h2>Lien invalide ou expiré</h2>
+      <p>Le lien utilisé n'est plus valable.</p>
       <div class="actions">
         <router-link to="/reinitialisation-mot-de-passe" class="btn btn-primary">
           Demander un nouveau lien
         </router-link>
         <router-link to="/" class="btn btn-secondary">
-          Retour a l'accueil
+          Retour à l'accueil
         </router-link>
       </div>
     </div>
 
     <div v-else-if="success" class="success-message">
       <div class="success-icon">OK</div>
-      <h2>Mot de passe cree avec succes</h2>
-      <p>Votre compte est pret. Vous pouvez maintenant vous connecter.</p>
+      <h2>Mot de passe créé avec succès</h2>
+      <p>Votre compte est prêt. Vous pouvez maintenant vous connecter.</p>
       <div class="actions">
         <router-link to="/connexion" class="btn btn-primary">
           Se connecter
@@ -33,8 +33,8 @@
 
     <template v-else>
       <div class="form-header">
-        <h1>Creer votre mot de passe</h1>
-        <p>{{ tokenEmail ? `Compte concerne : ${tokenEmail}` : 'Definissez votre mot de passe.' }}</p>
+        <h1>Créer votre mot de passe</h1>
+        <p>{{ tokenEmail ? `Compte concerné : ${tokenEmail}` : 'Définissez votre mot de passe.' }}</p>
       </div>
 
       <div v-if="apiError" class="alert alert-error">{{ apiError }}</div>
@@ -68,11 +68,11 @@
           <div class="password-requirements">
             <p><strong>Exigences du mot de passe :</strong></p>
             <div class="requirements-list">
-              <div :class="['requirement', { met: formData.motDePasse.length >= 8 }]">Au moins 8 caracteres</div>
+              <div :class="['requirement', { met: formData.motDePasse.length >= 8 }]">Au moins 8 caractères</div>
               <div :class="['requirement', { met: /[A-Z]/.test(formData.motDePasse) }]">Au moins une majuscule</div>
               <div :class="['requirement', { met: /[a-z]/.test(formData.motDePasse) }]">Au moins une minuscule</div>
               <div :class="['requirement', { met: /[0-9]/.test(formData.motDePasse) }]">Au moins un chiffre</div>
-              <div :class="['requirement', { met: /[^A-Za-z0-9]/.test(formData.motDePasse) }]">Au moins un caractere special</div>
+              <div :class="['requirement', { met: /[^A-Za-z0-9]/.test(formData.motDePasse) }]">Au moins un caractère spécial</div>
             </div>
           </div>
 
@@ -95,7 +95,7 @@
 
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" :disabled="submitting">
-            {{ submitting ? 'Creation en cours...' : 'Creer mon mot de passe' }}
+            {{ submitting ? 'Création en cours...' : 'Créer mon mot de passe' }}
           </button>
         </div>
       </form>
@@ -148,11 +148,11 @@ async function validateToken() {
 
 function validatePassword(password) {
   const validationErrors = []
-  if (password.length < 8) validationErrors.push('Au moins 8 caracteres')
+  if (password.length < 8) validationErrors.push('Au moins 8 caractères')
   if (!/[A-Z]/.test(password)) validationErrors.push('Au moins une majuscule')
   if (!/[a-z]/.test(password)) validationErrors.push('Au moins une minuscule')
   if (!/[0-9]/.test(password)) validationErrors.push('Au moins un chiffre')
-  if (!/[^A-Za-z0-9]/.test(password)) validationErrors.push('Au moins un caractere special')
+  if (!/[^A-Za-z0-9]/.test(password)) validationErrors.push('Au moins un caractère spécial')
   return validationErrors
 }
 
@@ -161,7 +161,7 @@ async function handleSubmit() {
   apiError.value = ''
 
   if (!tokenValid.value) {
-    apiError.value = 'Le lien n est plus valide.'
+    apiError.value = "Le lien n'est plus valide."
     return
   }
 

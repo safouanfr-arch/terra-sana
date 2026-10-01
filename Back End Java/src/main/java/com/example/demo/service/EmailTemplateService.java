@@ -158,11 +158,11 @@ public class EmailTemplateService {
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Votre commande {{numero}} est bien confirmee.
+                        Votre commande {{numero}} est bien confirmée.
 
                         Point de collecte : {{pointCollecte}}
                         Date de retrait : {{dateRetrait}}
-                        Creneau : {{creneauRetrait}}
+                        Créneau : {{creneauRetrait}}
                         Montant : {{montant}}
                         Code de retrait : {{codeRetrait}}
 
@@ -176,11 +176,11 @@ public class EmailTemplateService {
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Petit rappel : votre commande {{numero}} est a retirer demain.
+                        Petit rappel : votre commande {{numero}} est à retirer demain.
 
                         Point de collecte : {{pointCollecte}}
                         Date de retrait : {{dateRetrait}}
-                        Creneau : {{creneauRetrait}}
+                        Créneau : {{creneauRetrait}}
                         """)
                 .active(true)
                 .build());
@@ -190,56 +190,69 @@ public class EmailTemplateService {
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Votre commande {{numero}} a ete annulee.
-                        Si besoin, nous restons disponibles a {{companyEmail}}.
+                        Votre commande {{numero}} a été annulée.
+                        Si besoin, nous restons disponibles à {{companyEmail}}.
                         """)
                 .active(true)
                 .build());
         defaults.put(EmailNotificationType.MEMBERSHIP_VALIDATION, EmailTemplateDto.builder()
                 .type(EmailNotificationType.MEMBERSHIP_VALIDATION.name())
-                .objet("Votre adhesion Terra Sana est validee")
+                .objet("Votre adhésion Terra Sana est validée")
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Votre demande d'adhesion Terra Sana a ete acceptee.
-                        Vous pouvez definir votre mot de passe ici :
+                        Votre demande d'adhésion Terra Sana a été acceptée.
+                        Vous pouvez définir votre mot de passe ici :
                         {{lienMotDePasse}}
                         """)
                 .active(true)
                 .build());
         defaults.put(EmailNotificationType.MEMBERSHIP_REJECTION, EmailTemplateDto.builder()
                 .type(EmailNotificationType.MEMBERSHIP_REJECTION.name())
-                .objet("Suite a votre demande d'adhesion Terra Sana")
+                .objet("Suite à votre demande d'adhésion Terra Sana")
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Votre demande d'adhesion n'a pas pu etre acceptee.
+                        Votre demande d'adhésion n'a pas pu être acceptée.
                         Motif : {{motifRefus}}
                         """)
                 .active(true)
                 .build());
         defaults.put(EmailNotificationType.MEMBERSHIP_REQUEST_RECEIVED, EmailTemplateDto.builder()
                 .type(EmailNotificationType.MEMBERSHIP_REQUEST_RECEIVED.name())
-                .objet("Votre demande d'adhesion Terra Sana a bien ete recue")
+                .objet("Votre demande d'adhésion Terra Sana a bien été reçue")
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Nous avons bien recu votre demande d'adhesion.
-                        Notre equipe reviendra vers vous apres verification.
+                        Nous avons bien reçu votre demande d'adhésion.
+                        Notre équipe reviendra vers vous après vérification.
+                        """)
+                .active(true)
+                .build());
+        defaults.put(EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION, EmailTemplateDto.builder()
+                .type(EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION.name())
+                .objet("Terra Sana - Confirmez votre adresse email")
+                .contenu("""
+                        Bonjour {{prenom}},
+
+                        Confirmez votre adresse email afin de transmettre votre demande d'adhésion à Terra Sana :
+                        {{lienConfirmation}}
+
+                        Ce lien est valable pendant 24 heures. Sans confirmation, votre demande ne sera pas transmise à notre équipe.
                         """)
                 .active(true)
                 .build());
         defaults.put(EmailNotificationType.ORDER_READY, EmailTemplateDto.builder()
                 .type(EmailNotificationType.ORDER_READY.name())
-                .objet("Votre commande {{numero}} est prete")
+                .objet("Votre commande {{numero}} est prête")
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Votre commande {{numero}} est prete a etre retiree.
+                        Votre commande {{numero}} est prête à être retirée.
 
                         Point de collecte : {{pointCollecte}}
                         Date de retrait : {{dateRetrait}}
-                        Creneau : {{creneauRetrait}}
+                        Créneau : {{creneauRetrait}}
                         """)
                 .active(true)
                 .build());
@@ -247,7 +260,7 @@ public class EmailTemplateService {
                 .type(EmailNotificationType.LOW_STOCK_ALERT.name())
                 .objet("Alerte stock faible - {{produitNom}}")
                 .contenu("""
-                        Le stock du produit {{produitNom}} est passe sous le seuil.
+                        Le stock du produit {{produitNom}} est passé sous le seuil.
 
                         Stock actuel : {{stockActuel}}
                         Seuil de vigilance : {{seuilStock}}
@@ -267,11 +280,11 @@ public class EmailTemplateService {
                 .build());
         defaults.put(EmailNotificationType.PASSWORD_SETUP, EmailTemplateDto.builder()
                 .type(EmailNotificationType.PASSWORD_SETUP.name())
-                .objet("Lien pour definir ou reinitialiser votre mot de passe")
+                .objet("Lien pour définir ou réinitialiser votre mot de passe")
                 .contenu("""
                         Bonjour {{prenom}},
 
-                        Vous pouvez definir ou reinitialiser votre mot de passe via le lien suivant :
+                        Vous pouvez définir ou réinitialiser votre mot de passe via le lien suivant :
                         {{lienMotDePasse}}
                         """)
                 .active(true)

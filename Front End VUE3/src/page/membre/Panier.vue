@@ -5,7 +5,7 @@
       <div v-if="apiError" class="alert alert-error">{{ apiError }}</div>
       <div class="empty-icon">0</div>
       <h2>Votre panier est vide</h2>
-      <p>Decouvrez nos produits et commencez vos achats.</p>
+      <p>Découvrez nos produits et commencez vos achats.</p>
       <router-link to="/catalogue" class="btn btn-primary">
         Parcourir le catalogue
       </router-link>
@@ -80,10 +80,10 @@
 
       <div class="panier-resume">
         <div class="resume-card">
-          <h2>Recapitulatif</h2>
+          <h2>Récapitulatif</h2>
 
           <div class="resume-ligne resume-total">
-            <span><strong>Total a payer</strong></span>
+            <span><strong>Total à payer</strong></span>
             <span><strong>{{ totaux.totalTVAC.toFixed(2) }} €</strong></span>
           </div>
 
@@ -97,14 +97,14 @@
           <div class="resume-info">
             <p>Paiement au retrait</p>
             <p>Retrait en point de collecte</p>
-            <p>Commande securisee</p>
+            <p>Commande sécurisée</p>
           </div>
         </div>
 
         <div class="resume-help">
           <h3>Besoin d'aide ?</h3>
           <p>
-            Vous pouvez modifier les quantites ou retirer des articles avant de valider votre commande.
+            Vous pouvez modifier les quantités ou retirer des articles avant de valider votre commande.
           </p>
         </div>
       </div>
@@ -189,7 +189,7 @@ const retirerDuPanier = (id) => {
 }
 
 const handleViderPanier = () => {
-  if (confirm('Etes-vous sur de vouloir vider votre panier ?')) {
+  if (confirm('Êtes-vous sûr de vouloir vider votre panier ?')) {
     panierStore.viderPanier()
   }
 }
@@ -221,15 +221,15 @@ async function synchroniserPanier() {
 
 function buildStockMessage(resultat) {
   if (resultat.panierVide) {
-    return 'Le stock a change. Votre panier ne contient plus d article encore disponible.'
+    return "Le stock a changé. Votre panier ne contient plus d'article disponible."
   }
 
-  const morceaux = ['Le stock a evolue depuis votre derniere action.']
+  const morceaux = ['Le stock a évolué depuis votre dernière action.']
   if (resultat.quantitesAjustees > 0) {
-    morceaux.push(`${resultat.quantitesAjustees} quantite(s) ont ete ajustee(s).`)
+    morceaux.push(`${resultat.quantitesAjustees} quantité(s) ont été ajustée(s).`)
   }
   if (resultat.produitsRetires > 0) {
-    morceaux.push(`${resultat.produitsRetires} produit(s) indisponible(s) ont ete retires.`)
+    morceaux.push(`${resultat.produitsRetires} produit(s) indisponible(s) ont été retiré(s).`)
   }
   return morceaux.join(' ')
 }

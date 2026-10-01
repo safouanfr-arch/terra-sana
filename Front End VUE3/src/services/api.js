@@ -10,18 +10,25 @@ export const api = axios.create({
 })
 
 const EMAIL_WORKFLOW_TIMEOUT = 30000
+const GENERIC_SERVER_ERROR = 'Une erreur technique est survenue. Veuillez réessayer dans quelques instants.'
 
 api.interceptors.response.use(
   response => response,
   error => {
     const data = error.response?.data
-    error.apiMessage =
+    const serverMessage =
       data?.message ||
       data?.detail ||
       data?.error ||
-      (typeof data === 'string' ? data : null) ||
-      error.message ||
-      'Erreur API'
+      (typeof data === 'string' ? data : null)
+
+    if (Number(error.response?.status || 0) >= 500) {
+      error.apiMessage = GENERIC_SERVER_ERROR
+    } else if (!error.response) {
+      error.apiMessage = 'Impossible de contacter Terra Sana. Vérifiez votre connexion puis réessayez.'
+    } else {
+      error.apiMessage = serverMessage || error.message || 'Erreur API'
+    }
     return Promise.reject(error)
   }
 )
@@ -314,7 +321,7 @@ export function fromProduitDto(dto, categories = []) {
 export function toProduitDto(produit, categories = []) {
   const categorie = categories.find(cat => cat.id === produit.categorieId || cat.nom === produit.categorie)
   if (!categorie) {
-    throw new Error('Categorie introuvable pour ce produit.')
+    throw new Error('Catégorie introuvable pour ce produit.')
   }
 
   return {
@@ -335,6 +342,11 @@ export function toProduitDto(produit, categories = []) {
     actif: produit.actif !== false,
     categorieId: categorie.id
   }
+}
+
+export function toProduitUpdateDto(produit, categories = []) {
+  const { stockActuel, ...dto } = toProduitDto(produit, categories)
+  return dto
 }
 
 export function toProduitStockAdjustmentDto(stockActuel) {
@@ -417,6 +429,7 @@ export function fromMembreDto(dto) {
 
 export function fromDemandeAdhesionDto(dto) {
   const statutMap = {
+    A_CONFIRMER: 'a_confirmer',
     EN_ATTENTE: 'en_attente',
     APPROUVEE: 'approuvee',
     REFUSEE: 'refusee'
@@ -441,8 +454,9 @@ export function fromDemandeAdhesionDto(dto) {
     date: dto.dateSoumission,
     dateSoumission: dto.dateSoumission,
     dateTraitement: dto.dateTraitement,
-    administrateurEmail: dto.administrateurEmail || '',
-    lienActivation: dto.lienActivation || ''
+    conditionsAccepteesAt: dto.conditionsAccepteesAt,
+    conditionsVersion: dto.conditionsVersion || '',
+    administrateurEmail: dto.administrateurEmail || ''
   }
 }
 
@@ -457,7 +471,7 @@ export function toDemandeAdhesionCreateDto(demande) {
     codePostal: demande.codePostal,
     pays: demande.pays || 'Belgique',
     message: demande.message || demande.justification || '',
-    accepteConditions: demande.accepteConditions === true || demande.accepteConcept === true
+    accepteConditions: demande.accepteConditions === true
   }
 }
 
@@ -537,6 +551,8 @@ export function fromCommandeDto(dto) {
     dateRetrait: dto.dateRetrait,
     dateAnnulation: dto.dateAnnulation,
     commentaire: dto.commentaire || '',
+    incidentPreparation: dto.incidentPreparation === true,
+    motifIncidentPreparation: dto.motifIncidentPreparation || '',
     paye: dto.paye === true,
     datePaiement: dto.datePaiement,
     membre: dto.membre
@@ -669,6 +685,7 @@ export function fromGeneratedEmailDto(dto = {}) {
     dateEnvoi: dto.dateEnvoi || null,
     erreurEnvoi: dto.erreurEnvoi || '',
     commandeId: dto.commandeId || null,
+    creneauCollecteId: dto.creneauCollecteId || null,
     membreId: dto.membreId || null,
     produitId: dto.produitId || null,
     demandeAdhesionId: dto.demandeAdhesionId || null
@@ -715,7 +732,7 @@ export const produitsApi = {
     return fromProduitDto(data, categories)
   },
   async update(id, produit, categories = []) {
-    const { data } = await api.put(`/produits/${id}`, toProduitDto(produit, categories))
+    const { data } = await api.put(`/produits/${id}`, toProduitUpdateDto(produit, categories))
     return fromProduitDto(data, categories)
   },
   async adjustStock(id, stockActuel, categories = []) {
@@ -781,6 +798,18 @@ export const demandesAdhesionApi = {
       timeout: EMAIL_WORKFLOW_TIMEOUT
     })
     return fromDemandeAdhesionDto(data)
+  },
+  async confirmEmail(token) {
+    const { data } = await api.post('/demandes-adhesion/confirmation', { token }, {
+      timeout: EMAIL_WORKFLOW_TIMEOUT
+    })
+    return data
+  },
+  async resendConfirmation(email) {
+    const { data } = await api.post('/demandes-adhesion/confirmation/renvoyer', { email }, {
+      timeout: EMAIL_WORKFLOW_TIMEOUT
+    })
+    return data
   },
   async list() {
     const { data } = await api.get('/demandes-adhesion')
@@ -868,11 +897,51 @@ export const commandesApi = {
     })
     return fromCommandeDto(data)
   },
-  async updateStatus(id, statut) {
-    const { data } = await api.put(`/commandes/${id}/statut`, { statut }, {
+  async reportPreparationIncident(id, motif) {
+    const { data } = await api.put(`/commandes/${id}/incident-preparation`, { motif })
+    return fromCommandeDto(data)
+  },
+  async resolvePreparationIncident(id) {
+    const { data } = await api.delete(`/commandes/${id}/incident-preparation`)
+    return fromCommandeDto(data)
+  },
+  async finalizePreparationGroup(creneauId) {
+    const { data } = await api.post(`/admin/preparation/groupes/${creneauId}/finaliser`, null, {
       timeout: EMAIL_WORKFLOW_TIMEOUT
     })
-    return fromCommandeDto(data)
+    return data
+  },
+  async downloadPreparationPdf(creneauId) {
+    const response = await api.get(`/admin/preparation/groupes/${creneauId}/pdf`, {
+      responseType: 'blob',
+      timeout: EMAIL_WORKFLOW_TIMEOUT
+    })
+    const disposition = String(response.headers['content-disposition'] || '')
+    const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+    const quotedName = disposition.match(/filename="([^"]+)"/i)?.[1]
+    const fileName = encodedName
+      ? decodeURIComponent(encodedName)
+      : quotedName || `preparation_creneau_${creneauId}.pdf`
+    return { blob: response.data, fileName }
+  },
+  async getPreparationEmailStatus(creneauId) {
+    const { data } = await api.get(`/admin/preparation/groupes/${creneauId}/email`)
+    return data
+  },
+  async sendPreparationEmail(creneauId) {
+    const { data } = await api.post(`/admin/preparation/groupes/${creneauId}/email`)
+    return data
+  }
+}
+
+export const retraitsApi = {
+  async search(codeRetrait) {
+    const { data } = await api.post('/admin/retraits/rechercher', { codeRetrait })
+    return data
+  },
+  async confirm(codeRetrait) {
+    const { data } = await api.post('/admin/retraits/confirmer', { codeRetrait })
+    return data
   }
 }
 

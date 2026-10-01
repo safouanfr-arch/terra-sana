@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.dto.ProduitDto;
 import com.example.demo.dto.ProduitStockAdjustmentDto;
+import com.example.demo.dto.ProduitUpdateDto;
 import com.example.demo.security.AppUserPrincipal;
 import com.example.demo.service.ProduitService;
 
@@ -29,7 +30,7 @@ public class ProduitController {
 		produitService.delete(id);
 	}
 	@PutMapping("/{id}")
-	public ProduitDto update(@PathVariable(name= "id") Long id,@RequestBody @Valid ProduitDto dto) {
+	public ProduitDto update(@PathVariable(name= "id") Long id,@RequestBody @Valid ProduitUpdateDto dto) {
 		return produitService.update(id,dto);
 	}
 	@PutMapping("/{id}/stock")

@@ -32,6 +32,8 @@ public class CommandeMapper {
                 .dateRetrait(entity.getDateRetraitPrevu())
                 .dateAnnulation(entity.getDateAnnulation())
                 .commentaire(entity.getCommentaire())
+                .incidentPreparation(entity.isIncidentPreparation())
+                .motifIncidentPreparation(entity.getMotifIncidentPreparation())
                 .membre(toMembreDto(entity.getMembre()))
                 .pointCollecte(toPointDto(entity.getPointCollecte()))
                 .creneauRetrait(toCreneauDto(entity.getCreneauCollecte()))

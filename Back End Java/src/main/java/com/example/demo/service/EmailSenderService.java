@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,30 @@ public class EmailSenderService {
     private boolean mailEnabled;
 
     public EmailSendResult sendHtmlEmail(String destinataire, String sujet, String contenuHtml) {
+        return sendEmail(destinataire, sujet, contenuHtml, null);
+    }
+
+    public EmailSendResult sendHtmlEmailWithPdf(
+            String destinataire,
+            String sujet,
+            String contenuHtml,
+            String attachmentFileName,
+            byte[] attachmentContent
+    ) {
+        return sendEmail(
+                destinataire,
+                sujet,
+                contenuHtml,
+                new PdfAttachment(attachmentFileName, attachmentContent)
+        );
+    }
+
+    private EmailSendResult sendEmail(
+            String destinataire,
+            String sujet,
+            String contenuHtml,
+            PdfAttachment attachment
+    ) {
         LocalDateTime attemptedAt = LocalDateTime.now();
 
         if (!mailEnabled) {
@@ -49,6 +74,12 @@ public class EmailSenderService {
             return EmailSendResult.failed(attemptedAt, "Adresse expediteur SMTP absente.");
         }
 
+        if (attachment != null && (isBlank(attachment.fileName())
+                || attachment.content() == null
+                || attachment.content().length == 0)) {
+            return EmailSendResult.failed(attemptedAt, "Piece jointe PDF absente ou vide.");
+        }
+
         Object mailSender = resolveMailSender(attemptedAt);
         if (mailSender == null) {
             return EmailSendResult.failed(
@@ -59,12 +90,15 @@ public class EmailSenderService {
 
         try {
             Object message = invokeNoArg(mailSender, "createMimeMessage");
-            Object helper = createMimeMessageHelper(message);
+            Object helper = createMimeMessageHelper(message, attachment != null);
 
             invokeString(helper, "setFrom", fromAddress.trim());
             invokeString(helper, "setTo", destinataire.trim());
             invokeString(helper, "setSubject", sujet != null ? sujet : "");
             invokeTextHtml(helper, contenuHtml != null ? contenuHtml : "");
+            if (attachment != null) {
+                invokePdfAttachment(helper, attachment);
+            }
             invokeSend(mailSender, message);
 
             return EmailSendResult.sent(attemptedAt, LocalDateTime.now());
@@ -99,12 +133,37 @@ public class EmailSenderService {
         return method.invoke(target);
     }
 
-    private Object createMimeMessageHelper(Object message)
+    private Object createMimeMessageHelper(Object message, boolean multipart)
             throws ReflectiveOperationException {
         Class<?> mimeMessageClass = Class.forName(MIME_MESSAGE_CLASS);
         Class<?> helperClass = Class.forName(MIME_MESSAGE_HELPER_CLASS);
+        if (multipart) {
+            Constructor<?> constructor = helperClass.getConstructor(
+                    mimeMessageClass,
+                    boolean.class,
+                    String.class
+            );
+            return constructor.newInstance(message, true, "UTF-8");
+        }
         Constructor<?> constructor = helperClass.getConstructor(mimeMessageClass, String.class);
         return constructor.newInstance(message, "UTF-8");
+    }
+
+    private void invokePdfAttachment(Object helper, PdfAttachment attachment)
+            throws ReflectiveOperationException {
+        Class<?> inputStreamSourceClass = Class.forName("org.springframework.core.io.InputStreamSource");
+        Method method = helper.getClass().getMethod(
+                "addAttachment",
+                String.class,
+                inputStreamSourceClass,
+                String.class
+        );
+        method.invoke(
+                helper,
+                attachment.fileName().trim(),
+                new ByteArrayResource(attachment.content()),
+                "application/pdf"
+        );
     }
 
     private void invokeString(Object target, String methodName, String value)
@@ -153,6 +212,9 @@ public class EmailSenderService {
         public static EmailSendResult failed(LocalDateTime attemptedAt, String errorMessage) {
             return new EmailSendResult(false, attemptedAt, null, errorMessage);
         }
+    }
+
+    private record PdfAttachment(String fileName, byte[] content) {
     }
 
 }

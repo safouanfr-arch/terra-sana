@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Properties;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.mail.Session;
+import jakarta.mail.BodyPart;
+import jakarta.mail.Multipart;
+import jakarta.mail.Part;
 import jakarta.mail.internet.MimeMessage;
 
 @ExtendWith(MockitoExtension.class)
@@ -100,5 +105,95 @@ class EmailSenderServiceTest {
         assertThat(result.attemptedAt()).isNotNull();
         assertThat(result.sentAt()).isNull();
         assertThat(result.errorMessage()).contains("Spring Mail indisponible");
+    }
+
+    @Test
+    void sendHtmlEmailWithPdfCreatesMultipartPdfAttachment() throws Exception {
+        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+        byte[] pdf = "%PDF-test-content".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        when(applicationContext.getBeanProvider(JavaMailSender.class)).thenReturn(mailSenderProvider);
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        EmailSenderService.EmailSendResult result = emailSenderService.sendHtmlEmailWithPdf(
+                "preparation@terrasana.test",
+                "Dossier de preparation",
+                "<p>Bonjour</p>",
+                "preparation_Uccle_2026-10-10_14h00.pdf",
+                pdf
+        );
+
+        assertThat(result.sent()).isTrue();
+        verify(mailSender).send(message);
+        message.saveChanges();
+        BodyPart attachment = findAttachment((Multipart) message.getContent());
+        assertThat(attachment).isNotNull();
+        assertThat(attachment.getFileName()).isEqualTo("preparation_Uccle_2026-10-10_14h00.pdf");
+        assertThat(attachment.getContentType()).startsWith("application/pdf");
+        assertThat(readAllBytes(attachment.getInputStream())).isEqualTo(pdf);
+    }
+
+    @Test
+    void sendHtmlEmailWithPdfReturnsFailedWhenSmtpFails() {
+        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+        when(applicationContext.getBeanProvider(JavaMailSender.class)).thenReturn(mailSenderProvider);
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+        doThrow(new MailSendException("SMTP indisponible"))
+                .when(mailSender)
+                .send(any(MimeMessage.class));
+
+        EmailSenderService.EmailSendResult result = emailSenderService.sendHtmlEmailWithPdf(
+                "preparation@terrasana.test",
+                "Dossier de preparation",
+                "<p>Bonjour</p>",
+                "preparation.pdf",
+                "%PDF-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII)
+        );
+
+        assertThat(result.sent()).isFalse();
+        assertThat(result.sentAt()).isNull();
+        assertThat(result.errorMessage()).contains("SMTP indisponible");
+    }
+
+    @Test
+    void sendHtmlEmailStillCreatesNonMultipartMessage() throws Exception {
+        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+        when(applicationContext.getBeanProvider(JavaMailSender.class)).thenReturn(mailSenderProvider);
+        when(mailSenderProvider.getIfAvailable()).thenReturn(mailSender);
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        EmailSenderService.EmailSendResult result = emailSenderService.sendHtmlEmail(
+                "membre@terrasana.test",
+                "Confirmation",
+                "<p>Bonjour</p>"
+        );
+
+        assertThat(result.sent()).isTrue();
+        assertThat(message.getContent()).isInstanceOf(String.class);
+    }
+
+    private BodyPart findAttachment(Multipart multipart) throws Exception {
+        for (int index = 0; index < multipart.getCount(); index++) {
+            BodyPart part = multipart.getBodyPart(index);
+            if (Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())) {
+                return part;
+            }
+            Object content = part.getContent();
+            if (content instanceof Multipart nested) {
+                BodyPart found = findAttachment(nested);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private byte[] readAllBytes(InputStream input) throws Exception {
+        try (input; ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            input.transferTo(output);
+            return output.toByteArray();
+        }
     }
 }

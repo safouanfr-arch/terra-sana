@@ -26,7 +26,6 @@ import com.example.demo.dao.ProduitRepository;
 import com.example.demo.dto.CommandeCreateItemDto;
 import com.example.demo.dto.CommandeCreateRequestDto;
 import com.example.demo.dto.CommandeResponseDto;
-import com.example.demo.dto.CommandeStatutUpdateDto;
 import com.example.demo.model.Administrateur;
 import com.example.demo.model.Categorie;
 import com.example.demo.model.CreneauCollecte;
@@ -61,13 +60,24 @@ public class DemoDataSeeder implements CommandLineRunner {
         Administrateur admin = seedAdministrateur();
         Membre membre = seedMembre();
 
-        Categorie legumes = seedCategorie("Legumes bio", "Selection de legumes frais pour la demo.");
-        Categorie fruits = seedCategorie("Fruits de saison", "Fruits de saison visibles dans le catalogue.");
-        Categorie epicerie = seedCategorie("Epicerie locale", "Produits secs et boissons pour la demo.");
+        Categorie legumes = seedCategorie(
+                "Légumes bio",
+                "Légumes frais issus de l'agriculture biologique.",
+                "Legumes bio"
+        );
+        Categorie fruits = seedCategorie(
+                "Fruits de saison",
+                "Fruits sélectionnés selon la saison."
+        );
+        Categorie epicerie = seedCategorie(
+                "Épicerie locale",
+                "Boissons et produits d'épicerie issus de producteurs locaux.",
+                "Epicerie locale"
+        );
 
         Produit carottes = seedProduit(
                 "Carottes bio",
-                "Carottes locales de saison.",
+                "Carottes bio croquantes cultivées en Belgique, vendues au kilo.",
                 decimal("3.40"),
                 UniteProduit.KG,
                 decimal("80.00"),
@@ -77,27 +87,27 @@ public class DemoDataSeeder implements CommandLineRunner {
         );
         Produit pommesTerre = seedProduit(
                 "Pommes de terre",
-                "Pommes de terre polyvalentes pour cuisson vapeur et four.",
+                "Pommes de terre belges polyvalentes, vendues au kilo.",
                 decimal("2.80"),
                 UniteProduit.KG,
                 decimal("120.00"),
                 legumes,
                 EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/pommes-de-terre.jpg", "Belgique", "Maraicher des Flandres", true, true, true, true)
+                buildImagesMeta("/product-images/pommes-de-terre.jpg", "Belgique", "Maraîcher des Flandres", true, true, true, true)
         );
         Produit pommes = seedProduit(
                 "Pommes Jonagold",
-                "Pommes croquantes issues d'un verger belge.",
+                "Pommes Jonagold belges, croquantes et légèrement acidulées, vendues au kilo.",
                 decimal("4.20"),
                 UniteProduit.KG,
                 decimal("60.00"),
                 fruits,
                 EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/pomme-jonagold.webp", "Belgique", "Verger Saint Martin", true, true, true, true)
+                buildImagesMeta("/product-images/pomme-jonagold.webp", "Belgique", "Verger Saint-Martin", true, true, true, true)
         );
         Produit jusPomme = seedProduit(
                 "Jus de pomme artisanal",
-                "Jus de pomme local non filtre.",
+                "Jus de pomme belge non filtré, conditionné en bouteille de 1 litre.",
                 decimal("5.50"),
                 UniteProduit.LITRE,
                 decimal("24.00"),
@@ -106,28 +116,30 @@ public class DemoDataSeeder implements CommandLineRunner {
                 buildImagesMeta("/product-images/jus-de-pomme-artisanal.jpg", "Belgique", "Atelier du Verger", true, true, true, true)
         );
         Produit oeufs = seedProduit(
-                "Oeufs fermiers",
-                "Barquette d'oeufs fermiers.",
+                "Œufs fermiers x6",
+                "Six œufs fermiers belges conditionnés en boîte.",
                 decimal("4.90"),
                 UniteProduit.BARQUETTE,
                 decimal("18.00"),
                 epicerie,
                 EnumSet.of(TagAlimentaire.LOCAL),
-                buildImagesMeta("/product-images/oeufs.jpg", "Belgique", "Ferme des Pres", false, true, false, true)
+                buildImagesMeta("/product-images/oeufs.jpg", "Belgique", "Ferme des Prés", false, true, false, true),
+                "Oeufs fermiers"
         );
 
         PointCollecte pointCollecte = seedPointCollecte(
-                "Depot Bruxelles Centre",
-                "Rue du Marche 12, 1000 Bruxelles"
+                "Dépôt Bruxelles Centre",
+                "Rue du Marché 12, 1000 Bruxelles",
+                "Depot Bruxelles Centre"
         );
 
-        CreneauCollecte creneau1 = seedCreneau(pointCollecte, LocalDate.now().plusDays(1), LocalTime.of(18, 0), LocalTime.of(20, 0));
-        CreneauCollecte creneau2 = seedCreneau(pointCollecte, LocalDate.now().plusDays(2), LocalTime.of(18, 30), LocalTime.of(20, 30));
+        CreneauCollecte creneau1 = seedCreneau(pointCollecte, LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(20, 0));
+        CreneauCollecte creneau2 = seedCreneau(pointCollecte, LocalDate.now().plusDays(3), LocalTime.of(18, 30), LocalTime.of(20, 30));
 
         seedCommandesDemoIfMissing(membre, creneau1, creneau2, carottes, pommesTerre, pommes, jusPomme, oeufs);
 
         log.info(
-                "Demo seed pret: admin={}, membre={}, categories={}, produits={}, points={}, creneaux={}, commandes={}",
+                "Données de démonstration prêtes : admin={}, membre={}, catégories={}, produits={}, points={}, créneaux={}, commandes={}",
                 admin.getEmail(),
                 membre.getEmail(),
                 categorieRepository.count(),
@@ -171,9 +183,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 ));
     }
 
-    private Categorie seedCategorie(String nom, String description) {
+    private Categorie seedCategorie(String nom, String description, String... anciensNoms) {
         return categorieRepository.findAll().stream()
-                .filter(categorie -> equalsIgnoreCase(categorie.getNom(), nom))
+                .filter(categorie -> matchesName(categorie.getNom(), nom, anciensNoms))
                 .findFirst()
                 .orElseGet(() -> categorieRepository.save(
                         Categorie.builder()
@@ -192,10 +204,11 @@ public class DemoDataSeeder implements CommandLineRunner {
             BigDecimal stockActuel,
             Categorie categorie,
             Set<TagAlimentaire> tagsAlimentaires,
-            String images
+            String images,
+            String... anciensNoms
     ) {
         return produitRepository.findAll().stream()
-                .filter(produit -> equalsIgnoreCase(produit.getNom(), nom))
+                .filter(produit -> matchesName(produit.getNom(), nom, anciensNoms))
                 .filter(produit -> produit.getUnite() == unite)
                 .filter(produit -> produit.getCategorie() != null)
                 .filter(produit -> Objects.equals(produit.getCategorie().getId(), categorie.getId()))
@@ -216,9 +229,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 ));
     }
 
-    private PointCollecte seedPointCollecte(String nom, String adresse) {
+    private PointCollecte seedPointCollecte(String nom, String adresse, String... anciensNoms) {
         return pointCollecteRepository.findAll().stream()
-                .filter(point -> equalsIgnoreCase(point.getNom(), nom))
+                .filter(point -> matchesName(point.getNom(), nom, anciensNoms))
                 .findFirst()
                 .orElseGet(() -> pointCollecteRepository.save(
                         PointCollecte.builder()
@@ -277,7 +290,7 @@ public class DemoDataSeeder implements CommandLineRunner {
             candidateDate = candidateDate.plusDays(1);
         }
 
-        throw new IllegalStateException("Impossible de creer un creneau de demonstration sans doublon.");
+        throw new IllegalStateException("Impossible de créer un créneau de démonstration sans doublon.");
     }
 
     private void seedCommandesDemoIfMissing(
@@ -297,7 +310,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         commandeService.create(CommandeCreateRequestDto.builder()
                 .membreId(membre.getId())
                 .creneauCollecteId(creneau1.getId())
-                .commentaire("Commande de demonstration a annuler ou preparer.")
+                .commentaire("Commande de démonstration à annuler ou préparer.")
                 .produits(List.of(
                         item(carottes.getId(), "2.00"),
                         item(jusPomme.getId(), "1.00")
@@ -307,7 +320,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         CommandeResponseDto commandeReady = commandeService.create(CommandeCreateRequestDto.builder()
                 .membreId(membre.getId())
                 .creneauCollecteId(creneau2.getId())
-                .commentaire("Commande de demonstration deja preparee.")
+                .commentaire("Commande de démonstration déjà préparée.")
                 .produits(List.of(
                         item(pommesTerre.getId(), "3.00"),
                         item(pommes.getId(), "1.50"),
@@ -315,9 +328,15 @@ public class DemoDataSeeder implements CommandLineRunner {
                 ))
                 .build());
 
-        commandeService.updateStatus(
+        commandeService.transitionStatusIfCurrent(
                 commandeReady.getId(),
-                CommandeStatutUpdateDto.builder().statut(StatutCommande.READY).build()
+                StatutCommande.CONFIRMED,
+                StatutCommande.IN_PREP
+        );
+        commandeService.transitionStatusIfCurrent(
+                commandeReady.getId(),
+                StatutCommande.IN_PREP,
+                StatutCommande.READY
         );
     }
 
@@ -334,6 +353,14 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     private boolean equalsIgnoreCase(String left, String right) {
         return left != null && right != null && left.equalsIgnoreCase(right);
+    }
+
+    private boolean matchesName(String actualName, String expectedName, String... legacyNames) {
+        if (equalsIgnoreCase(actualName, expectedName)) {
+            return true;
+        }
+        return List.of(legacyNames).stream()
+                .anyMatch(legacyName -> equalsIgnoreCase(actualName, legacyName));
     }
 
     private String buildImagesMeta(

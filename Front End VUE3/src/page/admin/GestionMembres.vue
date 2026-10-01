@@ -2,14 +2,14 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
         <h1>Gestion des membres</h1>
         <p>Consulter les membres et suspendre ou reactiver les comptes.</p>
       </div>
       <div class="header-stats">
-        <span class="stat-badge success">Actifs: <strong>{{ statsActifs }}</strong></span>
+        <span class="stat-badge success">Actifs : <strong>{{ statsActifs }}</strong></span>
         <span class="stat-badge danger">Suspendus: <strong>{{ statsSuspendus }}</strong></span>
-        <span class="stat-badge">Total: <strong>{{ statsTotal }}</strong></span>
+        <span class="stat-badge">Total : <strong>{{ statsTotal }}</strong></span>
       </div>
     </div>
 
@@ -43,10 +43,10 @@
           <tr>
             <th>Membre</th>
             <th>Email</th>
-            <th>Telephone</th>
+            <th>Téléphone</th>
             <th>Adresse</th>
             <th>Inscription</th>
-            <th>Derniere connexion</th>
+            <th>Dernière connexion</th>
             <th>Commandes</th>
             <th>Statut</th>
             <th>Actions</th>
@@ -96,7 +96,7 @@
 
       <div v-if="filteredMembres.length === 0" class="empty-state">
         <div class="empty-icon">0</div>
-        <h3>Aucun membre trouve</h3>
+        <h3>Aucun membre trouvé</h3>
         <p>Modifiez la recherche ou le filtre de statut.</p>
       </div>
     </div>

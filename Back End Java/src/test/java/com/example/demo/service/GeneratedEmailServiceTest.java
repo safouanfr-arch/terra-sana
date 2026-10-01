@@ -226,7 +226,7 @@ public class GeneratedEmailServiceTest {
 
         assertThat(dto.getDestinataire()).isEqualTo("marie@terra.test");
         assertThat(dto.getType()).isEqualTo(EmailNotificationType.MEMBERSHIP_VALIDATION);
-        assertThat(dto.getContenuHtml()).contains(passwordLink);
+        assertThat(dto.getContenuHtml()).doesNotContain(passwordLink).contains("non conserve");
         assertThat(dto.getStatutEnvoi()).isEqualTo(EmailSendStatus.SENT);
         verify(emailSenderService).sendHtmlEmail(
                 eq("marie@terra.test"),
@@ -274,13 +274,120 @@ public class GeneratedEmailServiceTest {
 
         var dto = generatedEmailService.generateMembershipValidation(demande, passwordLink);
 
-        assertThat(dto.getContenuHtml()).contains(passwordLink);
+        assertThat(dto.getContenuHtml()).doesNotContain(passwordLink).contains("non conserve");
         assertThat(dto.getStatutEnvoi()).isEqualTo(EmailSendStatus.SENT);
         verify(emailSenderService).sendHtmlEmail(
                 eq("marie@terra.test"),
                 eq("Votre adhesion Terra Sana est validee"),
                 contains(passwordLink)
         );
+    }
+
+    @Test
+    void generatePasswordSetupSendsRawLinkButNeverStoresItWhenSmtpFails() {
+        Membre membre = Membre.builder()
+                .id(21L)
+                .nom("Dupont")
+                .prenom("Marie")
+                .email("marie@terra.test")
+                .build();
+        String passwordLink = "http://localhost:5173/creation-mot-de-passe/raw-secret-token";
+        EmailTemplateDto template = EmailTemplateDto.builder()
+                .type(EmailNotificationType.PASSWORD_SETUP.name())
+                .active(true)
+                .build();
+
+        when(emailSettingsService.getCompanyVariables()).thenReturn(Map.of("companyName", "Terra Sana"));
+        when(emailTemplateService.renderTemplate(eq(EmailNotificationType.PASSWORD_SETUP), any(), eq(null)))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, String> variables = invocation.getArgument(1);
+                    return new EmailTemplateService.RenderedEmail(
+                            template,
+                            "Reinitialisation du mot de passe",
+                            "Definissez votre mot de passe : " + variables.get("lienMotDePasse")
+                    );
+                });
+        when(generatedEmailRepository.save(any(GeneratedEmail.class))).thenAnswer(invocation -> {
+            GeneratedEmail email = invocation.getArgument(0);
+            if (email.getId() == null) {
+                email.setId(22L);
+            }
+            return email;
+        });
+        when(emailSenderService.sendHtmlEmail(
+                eq("marie@terra.test"),
+                eq("Reinitialisation du mot de passe"),
+                contains(passwordLink)
+        )).thenReturn(EmailSendResult.failed(
+                LocalDateTime.of(2026, 5, 1, 12, 0),
+                "SMTP indisponible"
+        ));
+
+        var dto = generatedEmailService.generatePasswordSetup(membre, passwordLink);
+
+        assertThat(dto.getStatutEnvoi()).isEqualTo(EmailSendStatus.FAILED);
+        assertThat(dto.getContenuHtml()).doesNotContain(passwordLink).contains("non conserve");
+        verify(emailSenderService).sendHtmlEmail(
+                eq("marie@terra.test"),
+                eq("Reinitialisation du mot de passe"),
+                contains(passwordLink)
+        );
+    }
+
+    @Test
+    void generateMembershipEmailConfirmationSendsRawLinkButNeverStoresIt() {
+        DemandeAdhesion demande = DemandeAdhesion.builder()
+                .id(18L)
+                .nom("Dupont")
+                .prenom("Marie")
+                .email("marie@terra.test")
+                .build();
+        String rawToken = "raw-token-must-not-be-stored";
+        String confirmationLink = "https://terra.test/confirmation-adhesion?token=" + rawToken;
+        EmailTemplateDto template = EmailTemplateDto.builder()
+                .type(EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION.name())
+                .active(true)
+                .build();
+
+        when(emailSettingsService.getCompanyVariables()).thenReturn(Map.of("companyName", "Terra Sana"));
+        when(emailTemplateService.renderTemplate(
+                eq(EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION),
+                any(),
+                eq(null)
+        )).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            Map<String, String> variables = invocation.getArgument(1);
+            return new EmailTemplateService.RenderedEmail(
+                    template,
+                    "Confirmez votre adresse " + variables.get("lienConfirmation"),
+                    "Bonjour Marie, confirmez votre adresse email."
+            );
+        });
+        when(generatedEmailRepository.save(any(GeneratedEmail.class))).thenAnswer(invocation -> {
+            GeneratedEmail email = invocation.getArgument(0);
+            email.setId(19L);
+            return email;
+        });
+        when(emailSenderService.sendHtmlEmail(
+                eq("marie@terra.test"),
+                contains(confirmationLink),
+                contains(confirmationLink)
+        )).thenReturn(EmailSendResult.sent(
+                LocalDateTime.of(2026, 5, 1, 11, 30),
+                LocalDateTime.of(2026, 5, 1, 11, 30, 1)
+        ));
+
+        GeneratedEmailDto result = generatedEmailService.generateMembershipEmailConfirmation(
+                demande,
+                confirmationLink
+        );
+
+        assertThat(result.getType()).isEqualTo(EmailNotificationType.MEMBERSHIP_EMAIL_CONFIRMATION);
+        assertThat(result.getSujet()).doesNotContain(rawToken).contains("non conserve");
+        assertThat(result.getContenuHtml()).doesNotContain(rawToken).contains("non conserve");
+        assertThat(result.getDemandeAdhesionId()).isEqualTo(18L);
+        assertThat(result.getStatutEnvoi()).isEqualTo(EmailSendStatus.SENT);
     }
 
     @Test

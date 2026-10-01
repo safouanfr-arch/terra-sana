@@ -2,9 +2,9 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
         <h1>Gestion des points de collecte</h1>
-        <p>Gerer les lieux et creneaux de retrait des commandes.</p>
+        <p>Gérer les lieux et créneaux de retrait des commandes.</p>
       </div>
       <div style="display: flex; gap: 10px;">
         <button class="btn btn-primary" @click="handleAdd">Nouveau point de collecte</button>
@@ -23,7 +23,7 @@
         </div>
         <div class="point-info">
           <p><strong>Adresse:</strong> {{ point.adresse }}</p>
-          <p><strong>Creneaux:</strong> {{ formatCreneaux(point.creneaux) }}</p>
+          <p><strong>Créneaux :</strong> {{ formatCreneaux(point.creneaux) }}</p>
         </div>
         <div class="point-actions">
           <button class="btn-icon" @click="handleEdit(point)">Modifier</button>
@@ -51,7 +51,7 @@
           </div>
 
           <div class="form-group">
-            <label>Creneaux de collecte *</label>
+            <label>Créneaux de collecte *</label>
             <div class="creneaux-container">
               <div v-for="(creneau, idx) in formData.creneaux" :key="idx" class="creneau-item">
                 <div class="creneau-row">
@@ -73,17 +73,17 @@
                       :min="creneau.debut || undefined"
                     />
                   </div>
-                  <button class="btn-icon-delete" @click="removeCreneau(idx)" title="Supprimer ce creneau">
+                  <button class="btn-icon-delete" @click="removeCreneau(idx)" title="Supprimer ce créneau">
                     <span class="delete-icon">x</span>
                   </button>
                 </div>
                 <small v-if="isInvalidCreneau(creneau)" class="creneau-error">
-                  L'heure de fin doit etre posterieure a l'heure de debut.
+                  L'heure de fin doit être postérieure à l'heure de début.
                 </small>
               </div>
             </div>
             <button class="btn btn-secondary btn-add-creneau" type="button" @click="addCreneau">
-              Ajouter un creneau
+              Ajouter un créneau
             </button>
           </div>
 
@@ -178,7 +178,7 @@ function handleEdit(point) {
 }
 
 async function handleDelete(id) {
-  if (!confirm('Etes-vous sur de vouloir supprimer ce point de collecte ?')) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce point de collecte ?')) {
     return
   }
 
@@ -223,7 +223,7 @@ async function handleSave() {
   apiError.value = ''
 
   if (creneaux.some(isInvalidCreneau)) {
-    apiError.value = "L'heure de fin d'un creneau doit etre posterieure a l'heure de debut."
+    apiError.value = "L'heure de fin d'un créneau doit être postérieure à l'heure de début."
     return
   }
 

@@ -20,6 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpHeaders;
 
 @Configuration
 @EnableWebSecurity
@@ -40,6 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/demandes-adhesion").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/demandes-adhesion/confirmation").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/demandes-adhesion/confirmation/renvoyer").permitAll()
                         .requestMatchers("/api/demandes-adhesion/**").hasRole("ADMIN")
                         .requestMatchers("/api/promotions/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/categories/actives").hasRole("MEMBRE")
@@ -49,7 +52,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/produits", "/api/produits/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/points-collecte", "/api/points-collecte/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/commandes").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/commandes/*/statut").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/commandes/*/incident-preparation").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/commandes/*/incident-preparation").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/commandes/moi").hasRole("MEMBRE")
                         .requestMatchers(HttpMethod.POST, "/api/commandes").hasRole("MEMBRE")
                         .requestMatchers(HttpMethod.PUT, "/api/commandes/*/annuler").authenticated()
@@ -90,6 +94,7 @@ public class SecurityConfig {
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of(HttpHeaders.CONTENT_DISPOSITION));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

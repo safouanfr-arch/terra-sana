@@ -5,8 +5,8 @@
         <router-link to="/catalogue" class="back-link">Retour au catalogue</router-link>
         <h1>Prochains retraits</h1>
         <p>
-          Consultez les points de collecte et les creneaux disponibles avant de preparer votre panier.
-          Le choix definitif se fera au moment de valider la commande.
+          Consultez les points de collecte et les créneaux disponibles avant de préparer votre panier.
+          Le choix définitif se fera au moment de valider la commande.
         </p>
       </div>
       <router-link to="/catalogue" class="btn btn-primary">
@@ -18,12 +18,12 @@
 
     <div v-if="loading" class="empty-state">
       <h3>Chargement des retraits...</h3>
-      <p>Recuperation des prochains creneaux de collecte.</p>
+      <p>Récupération des prochains créneaux de collecte.</p>
     </div>
 
     <div v-else-if="pointsAvecCreneaux.length === 0" class="empty-state">
-      <h3>Aucun creneau disponible</h3>
-      <p>Les prochains points de retrait seront affiches ici des qu'ils seront planifies.</p>
+      <h3>Aucun créneau disponible</h3>
+      <p>Les prochains points de retrait seront affichés ici dès qu'ils seront planifiés.</p>
     </div>
 
     <div v-else class="planning-grid">
@@ -97,7 +97,7 @@ function compareCreneaux(a, b) {
 }
 
 function formatDate(dateValue) {
-  if (!dateValue) return 'Date a confirmer'
+  if (!dateValue) return 'Date à confirmer'
   const date = new Date(`${String(dateValue).slice(0, 10)}T00:00:00`)
   if (Number.isNaN(date.getTime())) return dateValue
   return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })

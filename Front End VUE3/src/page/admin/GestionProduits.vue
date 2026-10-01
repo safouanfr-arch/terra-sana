@@ -2,7 +2,7 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">← Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">← Retour au tableau de bord</router-link>
         <h1>Gestion des produits</h1>
         <p>Créer, modifier et supprimer des produits</p>
       </div>
@@ -23,9 +23,9 @@
           <input v-model="searchQuery" type="text" placeholder="Nom du produit..." class="form-control" />
         </div>
         <div class="form-group filter-category">
-          <label>Categorie</label>
+          <label>Catégorie</label>
           <select v-model="filterCategorie" class="form-control">
-            <option value="">Toutes les categories</option>
+            <option value="">Toutes les catégories</option>
             <option v-for="cat in categories" :key="cat.id" :value="cat.nom">
               {{ cat.nom }}
             </option>
@@ -81,7 +81,7 @@
                 <span v-if="produit.badges?.bio" class="badge badge-bio" title="Bio">Bio</span>
                 <span v-if="produit.badges?.local" class="badge badge-local" title="Local">Local</span>
                 <span v-if="produit.badges?.vegan" class="badge badge-vegan" title="Vegan">Vegan</span>
-                <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien" title="Vegetarien">Veg</span>
+                <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien" title="Végétarien">Vég.</span>
               </div>
             </td>
             <td>
@@ -117,7 +117,7 @@
                 <img
                   class="image-preview"
                   :src="getImageSrc(formData)"
-                  :alt="`Apercu de ${formData.nom || 'produit'}`"
+                  :alt="`Aperçu de ${formData.nom || 'produit'}`"
                   @error="onProductImgError($event, formData)"
                 />
                 <div class="image-upload-actions">
@@ -141,7 +141,7 @@
             <div class="form-group">
               <label>Catégorie *</label>
               <select v-model="formData.categorie" class="form-control">
-                <option value="">Selectionnez une categorie</option>
+                <option value="">Sélectionnez une catégorie</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.nom">{{ cat.nom }}</option>
               </select>
             </div>
@@ -184,9 +184,9 @@
               <label>Prix (€) *</label>
               <input v-model.number="formData.prix" type="number" step="0.01" class="form-control" />
             </div>
-            <div class="form-group">
+            <div v-if="!editMode" class="form-group">
               <label>Stock *</label>
-              <input v-model.number="formData.stock" type="number" class="form-control" />
+              <input v-model.number="formData.stock" type="number" min="0" step="0.01" class="form-control" />
             </div>
             <div class="form-group">
               <label>TVA (%)</label>
@@ -204,7 +204,18 @@
             </div>
             <div class="form-group">
               <label>Producteur</label>
-              <input v-model="formData.producteur" type="text" class="form-control" placeholder="Ex: Ferme du Soleil" />
+              <input
+                v-model="formData.producteur"
+                type="text"
+                class="form-control"
+                list="producteur-suggestions"
+                placeholder="Ex: Ferme du Soleil"
+                autocomplete="off"
+              />
+              <datalist id="producteur-suggestions">
+                <option v-for="producteur in producteurOptions" :key="producteur" :value="producteur" />
+              </datalist>
+              <small class="field-help">Saisissez un nouveau producteur ou choisissez parmi ceux déjà enregistrés.</small>
             </div>
           </div>
 
@@ -259,8 +270,13 @@ const tagOptions = [
   { key: 'bio', label: 'Bio' },
   { key: 'local', label: 'Local' },
   { key: 'vegan', label: 'Vegan' },
-  { key: 'vegetarien', label: 'Vegetarien' }
+  { key: 'vegetarien', label: 'Végétarien' }
 ]
+const producteurOptions = computed(() => Array.from(new Set(
+  produits.value
+    .map(produit => String(produit.producteur || '').trim())
+    .filter(Boolean)
+)).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })))
 const formData = ref({
   nom: '',
   image: '',

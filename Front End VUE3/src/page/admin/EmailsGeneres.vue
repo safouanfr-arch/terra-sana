@@ -2,9 +2,9 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
-        <h1>Emails envoyes</h1>
-        <p>Historique des emails envoyes par l'application aux clients et aux administrateurs.</p>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
+        <h1>Emails envoyés</h1>
+        <p>Historique des emails envoyés par l'application aux membres et aux administrateurs.</p>
       </div>
     </div>
 
@@ -66,8 +66,8 @@
 
       <div v-if="filteredNotifications.length === 0" class="empty-state">
         <div class="empty-icon">0</div>
-        <h3>Aucun email trouve</h3>
-        <p>Les emails envoyes par les evenements metier apparaitront ici.</p>
+        <h3>Aucun email trouvé</h3>
+        <p>Les emails envoyés par les événements métier apparaîtront ici.</p>
       </div>
     </div>
   </div>
@@ -90,10 +90,12 @@ const typeLabels = {
   ORDER_CONFIRMATION: 'Confirmation commande',
   ORDER_REMINDER_J1: 'Rappel J-1',
   ORDER_CANCELLATION: 'Annulation commande',
-  MEMBERSHIP_VALIDATION: 'Validation adhesion',
-  MEMBERSHIP_REJECTION: 'Refus adhesion',
+  MEMBERSHIP_VALIDATION: "Validation d'adhésion",
+  MEMBERSHIP_REJECTION: "Refus d'adhésion",
   MEMBERSHIP_REQUEST_RECEIVED: 'Demande recue',
-  ORDER_READY: 'Commande prete',
+  MEMBERSHIP_EMAIL_CONFIRMATION: "Confirmation de l'email d'adhésion",
+  ORDER_READY: 'Commande prête',
+  PREPARATION_DOSSIER: 'Dossier de préparation',
   LOW_STOCK_ALERT: 'Alerte stock bas',
   OUT_OF_STOCK_ALERT: 'Rupture stock',
   PASSWORD_SETUP: 'Lien mot de passe'
@@ -101,8 +103,8 @@ const typeLabels = {
 
 const statusLabels = {
   PENDING: 'En attente',
-  SENT: 'Envoye',
-  FAILED: 'Echec'
+  SENT: 'Envoyé',
+  FAILED: 'Échec'
 }
 
 const availableTypes = computed(() => [...new Set(notifications.value.map(item => item.type).filter(Boolean))].sort())
@@ -137,10 +139,11 @@ function openPreview(id) {
 }
 
 function referenceLabel(notification) {
+  if (notification.creneauCollecteId) return `Créneau #${notification.creneauCollecteId}`
   if (notification.commandeId) return `Commande #${notification.commandeId}`
   if (notification.produitId) return `Produit #${notification.produitId}`
   if (notification.membreId) return `Membre #${notification.membreId}`
-  if (notification.demandeAdhesionId) return `Adhesion #${notification.demandeAdhesionId}`
+  if (notification.demandeAdhesionId) return `Adhésion #${notification.demandeAdhesionId}`
   return '-'
 }
 

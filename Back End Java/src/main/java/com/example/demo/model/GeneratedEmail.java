@@ -2,6 +2,9 @@ package com.example.demo.model;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.EmailSendStatus;
 import com.example.demo.model.enums.EmailNotificationType;
 
@@ -15,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -26,11 +30,18 @@ import lombok.ToString;
 @Entity
 @Table(
         name = "TEMAIL_GENERE",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_email_type_creneau",
+                        columnNames = {"type_email", "creneau_collecte_id"}
+                )
+        },
         indexes = {
                 @Index(name = "idx_email_genere_type", columnList = "type_email"),
                 @Index(name = "idx_email_genere_destinataire", columnList = "destinataire"),
                 @Index(name = "idx_email_genere_creation", columnList = "creation"),
-                @Index(name = "idx_email_genere_commande", columnList = "commande_id")
+                @Index(name = "idx_email_genere_commande", columnList = "commande_id"),
+                @Index(name = "idx_email_genere_creneau", columnList = "creneau_collecte_id")
         }
 )
 @Getter
@@ -49,6 +60,7 @@ public class GeneratedEmail {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "type_email", length = 50, nullable = false)
     private EmailNotificationType type;
 
@@ -80,6 +92,9 @@ public class GeneratedEmail {
 
     @Column(name = "commande_id")
     private Long commandeId;
+
+    @Column(name = "creneau_collecte_id")
+    private Long creneauCollecteId;
 
     @Column(name = "membre_id")
     private Long membreId;

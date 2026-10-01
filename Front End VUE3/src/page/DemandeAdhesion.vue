@@ -2,25 +2,25 @@
   <div class="page-container">
     <div v-if="submitted" class="success-message">
       <div class="success-icon">OK</div>
-      <h2>Demande d'adhesion envoyee</h2>
-      <p>Merci, votre demande a bien ete enregistree dans l'application.</p>
+      <h2>Demande d'adhésion enregistrée</h2>
+      <p>Votre demande a été enregistrée.</p>
       <div class="success-details">
         <p>
-          <strong>Prochaine etape :</strong> un administrateur examinera votre demande depuis l'espace admin.
+          <strong>Prochaine étape :</strong> consultez votre boîte mail et confirmez votre adresse afin de transmettre votre demande à Terra Sana.
         </p>
-        <p>Si elle est approuvee, un lien de creation de mot de passe sera genere.</p>
+        <p>La demande ne sera visible par notre équipe qu'après cette confirmation.</p>
       </div>
       <div class="actions">
         <router-link to="/" class="btn btn-primary">
-          Retour a l'accueil
+          Retour à l'accueil
         </router-link>
       </div>
     </div>
 
     <template v-else>
       <div class="form-header">
-        <h1>Demande d'adhesion</h1>
-        <p>Remplissez ce formulaire pour devenir membre de notre communaute</p>
+        <h1>Demande d'adhésion</h1>
+        <p>Remplissez ce formulaire pour devenir membre de notre communauté</p>
       </div>
 
       <div v-if="apiError" class="alert alert-error">{{ apiError }}</div>
@@ -43,13 +43,13 @@
             </div>
 
             <div class="form-group">
-              <label for="prenom">Prenom *</label>
+              <label for="prenom">Prénom *</label>
               <input
                 id="prenom"
                 v-model="formData.prenom"
                 type="text"
                 :class="{ error: errors.prenom }"
-                placeholder="Votre prenom"
+                placeholder="Votre prénom"
               />
               <span v-if="errors.prenom" class="error-message">{{ errors.prenom }}</span>
             </div>
@@ -66,7 +66,7 @@
             />
             <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
             <small class="field-help">
-              Cet email servira d'identifiant si votre demande est approuvee.
+              Cet email servira d'identifiant si votre demande est approuvée.
             </small>
           </div>
 
@@ -83,7 +83,7 @@
           </div>
 
           <div class="form-group">
-            <label for="telephone">Telephone *</label>
+            <label for="telephone">Téléphone *</label>
             <input
               id="telephone"
               v-model="formData.telephone"
@@ -105,7 +105,7 @@
               v-model="formData.rue"
               type="text"
               :class="{ error: errors.rue }"
-              placeholder="Numero et nom de rue"
+              placeholder="Numéro et nom de rue"
             />
             <span v-if="errors.rue" class="error-message">{{ errors.rue }}</span>
           </div>
@@ -141,34 +141,40 @@
           <h3>Motivation</h3>
 
           <div class="form-group">
-            <label for="justification">Pourquoi souhaitez-vous adherer ?</label>
+            <label for="justification">Pourquoi souhaitez-vous adhérer ?</label>
             <textarea
               id="justification"
               v-model="formData.justification"
               rows="4"
-              placeholder="Expliquez brievement vos motivations..."
+              placeholder="Expliquez brièvement vos motivations..."
             />
           </div>
         </div>
 
         <div class="form-section">
           <div class="form-group checkbox-group">
-            <label class="checkbox-label">
+            <div class="conditions-consent">
               <input
-                v-model="formData.accepteConcept"
+                id="conditionsAdhesion"
+                v-model="formData.accepteConditions"
                 type="checkbox"
-                :class="{ error: errors.accepteConcept }"
+                required
+                :class="{ error: errors.accepteConditions }"
               />
-              <span class="checkmark"></span>
-              J'accepte le concept de la plateforme et ses conditions d'utilisation *
-            </label>
-            <span v-if="errors.accepteConcept" class="error-message">{{ errors.accepteConcept }}</span>
+              <span class="conditions-consent-text">
+                <label for="conditionsAdhesion">J'ai lu et j'accepte les</label>
+                <router-link to="/conditions-adhesion" target="_blank" rel="noopener noreferrer">
+                  conditions d'adhésion de Terra Sana
+                </router-link><span>.</span>
+              </span>
+            </div>
+            <span v-if="errors.accepteConditions" class="error-message">{{ errors.accepteConditions }}</span>
           </div>
         </div>
 
         <div class="form-actions">
           <button type="submit" class="btn btn-primary" :disabled="submitting">
-            {{ submitting ? 'Envoi en cours...' : 'Envoyer ma demande d\'adhesion' }}
+            {{ submitting ? 'Envoi en cours...' : 'Envoyer ma demande d\'adhésion' }}
           </button>
           <router-link to="/" class="btn btn-secondary">
             Annuler
@@ -192,7 +198,7 @@ const formData = reactive({
   rue: '',
   codePostal: '',
   ville: '',
-  accepteConcept: false,
+  accepteConditions: false,
   justification: ''
 })
 
@@ -205,12 +211,12 @@ function validateForm() {
   const newErrors = {}
 
   if (!formData.nom.trim()) newErrors.nom = 'Le nom est requis'
-  if (!formData.prenom.trim()) newErrors.prenom = 'Le prenom est requis'
+  if (!formData.prenom.trim()) newErrors.prenom = 'Le prénom est requis'
 
   if (!formData.email.trim()) {
-    newErrors.email = 'L email est requis'
+    newErrors.email = "L'email est requis"
   } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    newErrors.email = 'Format d email invalide'
+    newErrors.email = "Format d'email invalide"
   }
 
   if (!formData.emailConfirm.trim()) {
@@ -220,9 +226,9 @@ function validateForm() {
   }
 
   if (!formData.telephone.trim()) {
-    newErrors.telephone = 'Le numero de telephone est requis'
+    newErrors.telephone = 'Le numéro de téléphone est requis'
   } else if (!/^[\d\s+\-()]+$/.test(formData.telephone)) {
-    newErrors.telephone = 'Format de telephone invalide'
+    newErrors.telephone = 'Format de téléphone invalide'
   }
 
   if (!formData.rue.trim()) newErrors.rue = 'La rue est requise'
@@ -234,7 +240,7 @@ function validateForm() {
   }
 
   if (!formData.ville.trim()) newErrors.ville = 'La ville est requise'
-  if (!formData.accepteConcept) newErrors.accepteConcept = 'Vous devez accepter le concept pour continuer'
+  if (!formData.accepteConditions) newErrors.accepteConditions = 'Vous devez accepter les conditions pour continuer'
 
   return newErrors
 }
@@ -260,7 +266,7 @@ async function handleSubmit() {
       codePostal: formData.codePostal,
       ville: formData.ville,
       justification: formData.justification,
-      accepteConcept: formData.accepteConcept
+      accepteConditions: formData.accepteConditions === true
     })
     submitted.value = true
   } catch (error) {
@@ -274,4 +280,28 @@ async function handleSubmit() {
 
 <style scoped>
 /* Les styles seront herites de App.css */
+
+.conditions-consent {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  gap: 0.55rem;
+}
+
+.conditions-consent input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0.15rem 0 0;
+}
+
+.conditions-consent-text {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.conditions-consent-text label {
+  display: inline;
+  margin: 0 0.25rem 0 0;
+}
 </style>

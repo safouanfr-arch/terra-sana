@@ -6,16 +6,16 @@
       <div class="success-message">
         <div class="success-icon">OK</div>
         <h2>Commande validée avec succès</h2>
-        <p>Votre commande <strong>{{ newCommande.numero }}</strong> a été enregistrée côté backend.</p>
+        <p>Votre commande <strong>{{ newCommande.numero }}</strong> a bien été enregistrée.</p>
 
         <div class="success-details">
-          <h3>Details de retrait</h3>
+          <h3>Détails du retrait</h3>
           <div class="detail-card">
-            <p><strong>Point de collecte:</strong> {{ newCommande.pointCollecte?.nom }}</p>
-            <p><strong>Adresse:</strong> {{ newCommande.pointCollecte?.adresse }}</p>
-            <p><strong>Date:</strong> {{ formatDateLong(newCommande.dateRetrait) }}</p>
-            <p><strong>Créneau:</strong> {{ newCommande.creneauRetrait?.horaire }}</p>
-            <p v-if="newCommande.codeRetrait"><strong>Code retrait:</strong> {{ newCommande.codeRetrait }}</p>
+            <p><strong>Point de collecte :</strong> {{ newCommande.pointCollecte?.nom }}</p>
+            <p><strong>Adresse :</strong> {{ newCommande.pointCollecte?.adresse }}</p>
+            <p><strong>Date :</strong> {{ formatDateLong(newCommande.dateRetrait) }}</p>
+            <p><strong>Créneau :</strong> {{ newCommande.creneauRetrait?.horaire }}</p>
+            <p v-if="newCommande.codeRetrait"><strong>Code de retrait :</strong> {{ newCommande.codeRetrait }}</p>
           </div>
         </div>
 
@@ -56,7 +56,7 @@
             <div>
               <h3>Commande {{ commande.numero }}</h3>
               <span class="commande-date">
-                Passee le {{ new Date(commande.date).toLocaleDateString('fr-FR') }}
+                Passée le {{ new Date(commande.date).toLocaleDateString('fr-FR') }}
               </span>
             </div>
             <span :class="['status-badge', getStatutBadge(commande.statut).class]">
@@ -97,11 +97,11 @@
           <div class="commande-footer">
             <div class="commande-total">
               <div class="total-ligne total-ttc">
-                <span>Total à payer:</span>
+                <span>Total à payer :</span>
                 <span class="total-amount">{{ commande.totalTVAC.toFixed(2) }} €</span>
               </div>
               <div v-if="commande.codeRetrait" class="total-ligne">
-                <span>Code retrait:</span>
+                <span>Code de retrait :</span>
                 <span>{{ commande.codeRetrait }}</span>
               </div>
             </div>
@@ -187,11 +187,11 @@ async function handleCancelCommande(commande) {
 
 function getStatutBadge(statut) {
   const statuts = {
-    CONFIRMED: { label: 'Confirmee', class: 'success' },
-    IN_PREP: { label: 'En preparation', class: 'info' },
-    READY: { label: 'Prete', class: 'primary' },
-    DISTRIBUTED: { label: 'Distribuee', class: 'success' },
-    CANCELLED: { label: 'Annulee', class: 'danger' }
+    CONFIRMED: { label: 'Confirmée', class: 'success' },
+    IN_PREP: { label: 'En préparation', class: 'info' },
+    READY: { label: 'Prête', class: 'primary' },
+    DISTRIBUTED: { label: 'Retirée', class: 'success' },
+    CANCELLED: { label: 'Annulée', class: 'danger' }
   }
   return statuts[statut] || statuts.CONFIRMED
 }

@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +30,8 @@ import com.example.demo.dao.MouvementStockRepository;
 import com.example.demo.dao.ProduitRepository;
 import com.example.demo.dto.CommandeCreateItemDto;
 import com.example.demo.dto.CommandeCreateRequestDto;
+import com.example.demo.dto.CommandeIncidentPreparationDto;
 import com.example.demo.dto.CommandeResponseDto;
-import com.example.demo.dto.CommandeStatutUpdateDto;
 import com.example.demo.mapper.CommandeMapper;
 import com.example.demo.model.Commande;
 import com.example.demo.model.CreneauCollecte;
@@ -50,6 +51,7 @@ public class CommandeService {
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
     private static final long MINIMUM_RETRAIT_HOURS = 24;
     private static final long MAXIMUM_RETRAIT_DAYS = 8;
+    private static final int MAX_WITHDRAWAL_CODE_ATTEMPTS = 10;
     private static final DateTimeFormatter NUMERO_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
     private static final Logger log = LoggerFactory.getLogger(CommandeService.class);
 
@@ -62,6 +64,7 @@ public class CommandeService {
     private final GeneratedEmailService generatedEmailService;
     private final PromotionService promotionService;
     private Clock clock = Clock.systemDefaultZone();
+    private Supplier<String> withdrawalCodeGenerator = this::generateWithdrawalCodeCandidate;
 
     @Transactional
     public CommandeResponseDto createForMember(Long membreId, CommandeCreateRequestDto dto) {
@@ -147,7 +150,7 @@ public class CommandeService {
 
             Commande commande = Commande.builder()
                     .numero(generateTemporaryNumero())
-                    .codeRetrait(generateCodeRetrait())
+                    .codeRetrait(generateUniqueWithdrawalCode())
                     .statut(StatutCommande.CONFIRMED)
                     .montantHT(scale(totalHT))
                     .montantTVA(scale(totalTVA))
@@ -203,7 +206,7 @@ public class CommandeService {
     @Transactional
     public CommandeResponseDto cancel(Long id) {
         try {
-            Commande commande = getCommandeOrThrow(id);
+            Commande commande = getCommandeForUpdateOrThrow(id);
 
             if (commande.getStatut() == StatutCommande.CANCELLED) {
                 return CommandeMapper.toDto(commande);
@@ -248,29 +251,75 @@ public class CommandeService {
     }
 
     @Transactional
-    public CommandeResponseDto updateStatus(Long id, CommandeStatutUpdateDto dto) {
-        if (dto.getStatut() == StatutCommande.CANCELLED) {
-            return cancel(id);
+    public ConditionalTransitionResult transitionStatusIfCurrent(
+            Long id,
+            StatutCommande expectedStatus,
+            StatutCommande nextStatus
+    ) {
+        Commande commande = getCommandeForUpdateOrThrow(id);
+        if (commande.getStatut() != expectedStatus) {
+            return ConditionalTransitionResult.NOT_ELIGIBLE;
+        }
+        if (expectedStatus == nextStatus) {
+            return ConditionalTransitionResult.NOT_ELIGIBLE;
+        }
+        if (commande.isIncidentPreparation()) {
+            return ConditionalTransitionResult.BLOCKED_BY_INCIDENT;
         }
 
-        Commande commande = getCommandeOrThrow(id);
+        applyStatusTransition(commande, nextStatus);
+        return ConditionalTransitionResult.TRANSITIONED;
+    }
+
+    @Transactional
+    public CommandeResponseDto confirmWithdrawalByCode(String codeRetrait) {
+        Commande commande = commandeRepository.findByCodeRetraitForUpdate(codeRetrait)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Code de retrait inconnu."));
+
+        if (commande.getStatut() == StatutCommande.DISTRIBUTED) {
+            return CommandeMapper.toDto(commande);
+        }
+        if (commande.getStatut() != StatutCommande.READY) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Seule une commande prete peut etre retiree."
+            );
+        }
+
+        return applyStatusTransition(commande, StatutCommande.DISTRIBUTED);
+    }
+
+    private CommandeResponseDto applyStatusTransition(Commande commande, StatutCommande nextStatus) {
         StatutCommande previousStatus = commande.getStatut();
-        if (commande.getStatut() == StatutCommande.CANCELLED && dto.getStatut() != StatutCommande.CANCELLED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Une commande annulee ne peut pas etre reactivee dans cette version.");
+
+        if (previousStatus == nextStatus) {
+            return CommandeMapper.toDto(commande);
         }
-        if (commande.getStatut() == StatutCommande.DISTRIBUTED && dto.getStatut() != StatutCommande.DISTRIBUTED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Une commande distribuee ne peut plus changer de statut.");
+
+        if (!isAllowedTransition(previousStatus, nextStatus)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Transition de statut interdite: " + previousStatus + " vers " + nextStatus + "."
+            );
         }
-        if (dto.getStatut() == StatutCommande.DISTRIBUTED && commande.getStatut() != StatutCommande.DISTRIBUTED) {
+
+        if (commande.isIncidentPreparation()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "L'incident de preparation doit etre resolu avant de faire progresser la commande."
+            );
+        }
+
+        if (nextStatus == StatutCommande.DISTRIBUTED) {
             List<MouvementStock> mouvements = registerSaleMovements(commande);
             commande.setMouvementsStock(mouvements);
             commande.setPaye(true);
-            commande.setDatePaiement(LocalDateTime.now());
+            commande.setDatePaiement(LocalDateTime.now(clock));
         }
 
-        commande.setStatut(dto.getStatut());
+        commande.setStatut(nextStatus);
         commande = commandeRepository.save(commande);
-        if (previousStatus != StatutCommande.READY && dto.getStatut() == StatutCommande.READY) {
+        if (previousStatus == StatutCommande.IN_PREP && nextStatus == StatutCommande.READY) {
             Commande readyCommande = commande;
             safeEmailGeneration(
                     () -> generatedEmailService.generateOrderReady(readyCommande),
@@ -280,8 +329,67 @@ public class CommandeService {
         return CommandeMapper.toDto(commande);
     }
 
+    @Transactional
+    public CommandeResponseDto reportPreparationIncident(Long id, CommandeIncidentPreparationDto dto) {
+        Commande commande = getCommandeForUpdateOrThrow(id);
+        if (commande.getStatut() == StatutCommande.CANCELLED
+                || commande.getStatut() == StatutCommande.DISTRIBUTED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Un incident de preparation ne peut pas etre signale sur une commande terminee."
+            );
+        }
+
+        String motif = dto.getMotif() != null ? dto.getMotif().trim() : "";
+        if (motif.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Le motif de l'incident est obligatoire.");
+        }
+        if (motif.length() > 500) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Le motif de l'incident ne peut pas depasser 500 caracteres."
+            );
+        }
+
+        commande.setIncidentPreparation(true);
+        commande.setMotifIncidentPreparation(motif);
+        return CommandeMapper.toDto(commandeRepository.save(commande));
+    }
+
+    @Transactional
+    public CommandeResponseDto resolvePreparationIncident(Long id) {
+        Commande commande = getCommandeForUpdateOrThrow(id);
+        if (!commande.isIncidentPreparation() && commande.getMotifIncidentPreparation() == null) {
+            return CommandeMapper.toDto(commande);
+        }
+
+        commande.setIncidentPreparation(false);
+        commande.setMotifIncidentPreparation(null);
+        return CommandeMapper.toDto(commandeRepository.save(commande));
+    }
+
+    private boolean isAllowedTransition(StatutCommande currentStatus, StatutCommande nextStatus) {
+        return switch (currentStatus) {
+            case CONFIRMED -> nextStatus == StatutCommande.IN_PREP;
+            case IN_PREP -> nextStatus == StatutCommande.READY;
+            case READY -> nextStatus == StatutCommande.DISTRIBUTED;
+            case DISTRIBUTED, CANCELLED -> false;
+        };
+    }
+
+    public enum ConditionalTransitionResult {
+        TRANSITIONED,
+        BLOCKED_BY_INCIDENT,
+        NOT_ELIGIBLE
+    }
+
     private Commande getCommandeOrThrow(Long id) {
         return commandeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Commande introuvable."));
+    }
+
+    private Commande getCommandeForUpdateOrThrow(Long id) {
+        return commandeRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Commande introuvable."));
     }
 
@@ -451,7 +559,20 @@ public class CommandeService {
         return "TMP-" + UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
     }
 
-    private String generateCodeRetrait() {
+    String generateUniqueWithdrawalCode() {
+        for (int attempt = 0; attempt < MAX_WITHDRAWAL_CODE_ATTEMPTS; attempt++) {
+            String candidate = withdrawalCodeGenerator.get();
+            if (!commandeRepository.existsByCodeRetrait(candidate)) {
+                return candidate;
+            }
+        }
+        throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Impossible de generer un code de retrait unique."
+        );
+    }
+
+    private String generateWithdrawalCodeCandidate() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
     }
 

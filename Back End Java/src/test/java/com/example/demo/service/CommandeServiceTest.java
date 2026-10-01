@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,10 +18,16 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Iterator;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,6 +44,7 @@ import com.example.demo.dao.MouvementStockRepository;
 import com.example.demo.dao.ProduitRepository;
 import com.example.demo.dto.CommandeCreateItemDto;
 import com.example.demo.dto.CommandeCreateRequestDto;
+import com.example.demo.dto.CommandeIncidentPreparationDto;
 import com.example.demo.dto.CommandeResponseDto;
 import com.example.demo.model.Commande;
 import com.example.demo.model.Categorie;
@@ -47,6 +55,8 @@ import com.example.demo.model.MouvementStock;
 import com.example.demo.model.PointCollecte;
 import com.example.demo.model.Produit;
 import com.example.demo.model.enums.UniteProduit;
+import com.example.demo.model.enums.StatutCommande;
+import com.example.demo.service.CommandeService.ConditionalTransitionResult;
 
 @ExtendWith(MockitoExtension.class)
 class CommandeServiceTest {
@@ -372,6 +382,363 @@ class CommandeServiceTest {
         verify(produitRepository, never()).findByIdForUpdate(any());
     }
 
+    @Test
+    void conditionalTransitionAllowsConfirmedToInPrep() {
+        Commande commande = commandeAvecStatut(StatutCommande.CONFIRMED);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        ConditionalTransitionResult result = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.CONFIRMED,
+                StatutCommande.IN_PREP
+        );
+
+        assertThat(result).isEqualTo(ConditionalTransitionResult.TRANSITIONED);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.IN_PREP);
+        verify(commandeRepository).save(commande);
+        verify(generatedEmailService, never()).generateOrderReady(any());
+    }
+
+    @Test
+    void conditionalTransitionAllowsInPrepToReadyAndGeneratesReadyEmailOnce() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        ConditionalTransitionResult firstResult = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.IN_PREP,
+                StatutCommande.READY
+        );
+        ConditionalTransitionResult secondResult = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.IN_PREP,
+                StatutCommande.READY
+        );
+
+        assertThat(firstResult).isEqualTo(ConditionalTransitionResult.TRANSITIONED);
+        assertThat(secondResult).isEqualTo(ConditionalTransitionResult.NOT_ELIGIBLE);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.READY);
+        verify(commandeRepository, times(1)).save(commande);
+        verify(generatedEmailService, times(1)).generateOrderReady(commande);
+    }
+
+    @Test
+    void conditionalTransitionKeepsReadyWhenReadyEmailGenerationFails() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+        doThrow(new RuntimeException("SMTP indisponible"))
+                .when(generatedEmailService)
+                .generateOrderReady(commande);
+
+        ConditionalTransitionResult result = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.IN_PREP,
+                StatutCommande.READY
+        );
+
+        assertThat(result).isEqualTo(ConditionalTransitionResult.TRANSITIONED);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.READY);
+        verify(commandeRepository).save(commande);
+        verify(generatedEmailService).generateOrderReady(commande);
+    }
+
+    @Test
+    void confirmWithdrawalMakesReadyOrderDistributedWithoutChangingStock() {
+        Produit produit = produitAvecStock("8.00");
+        Commande commande = commandeAvecStatut(StatutCommande.READY);
+        commande.setCodeRetrait("ABC123");
+        commande.setLignes(List.of(LigneCommande.builder()
+                .produit(produit)
+                .quantite(new BigDecimal("2.00"))
+                .build()));
+        when(commandeRepository.findByCodeRetraitForUpdate("ABC123")).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+        when(mouvementStockRepository.save(any(MouvementStock.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CommandeResponseDto response = commandeService.confirmWithdrawalByCode("ABC123");
+
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.DISTRIBUTED);
+        assertThat(response.getPaye()).isTrue();
+        assertThat(response.getDatePaiement()).isNotNull();
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("8.00");
+        verify(mouvementStockRepository).save(any(MouvementStock.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("forbiddenTransitions")
+    void conditionalTransitionRejectsJumpsAndBackwardTransitions(
+            StatutCommande currentStatus,
+            StatutCommande requestedStatus
+    ) {
+        Commande commande = commandeAvecStatut(currentStatus);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+
+        assertThatThrownBy(() -> commandeService.transitionStatusIfCurrent(99L, currentStatus, requestedStatus))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        assertThat(commande.getStatut()).isEqualTo(currentStatus);
+        verify(commandeRepository, never()).save(any(Commande.class));
+        verify(generatedEmailService, never()).generateOrderReady(any());
+    }
+
+    private static Stream<Arguments> forbiddenTransitions() {
+        return Stream.of(
+                Arguments.of(StatutCommande.CONFIRMED, StatutCommande.READY),
+                Arguments.of(StatutCommande.CONFIRMED, StatutCommande.DISTRIBUTED),
+                Arguments.of(StatutCommande.IN_PREP, StatutCommande.CONFIRMED),
+                Arguments.of(StatutCommande.IN_PREP, StatutCommande.DISTRIBUTED),
+                Arguments.of(StatutCommande.READY, StatutCommande.CONFIRMED),
+                Arguments.of(StatutCommande.READY, StatutCommande.IN_PREP),
+                Arguments.of(StatutCommande.DISTRIBUTED, StatutCommande.CONFIRMED),
+                Arguments.of(StatutCommande.DISTRIBUTED, StatutCommande.IN_PREP),
+                Arguments.of(StatutCommande.DISTRIBUTED, StatutCommande.READY),
+                Arguments.of(StatutCommande.CANCELLED, StatutCommande.CONFIRMED),
+                Arguments.of(StatutCommande.CANCELLED, StatutCommande.IN_PREP),
+                Arguments.of(StatutCommande.CANCELLED, StatutCommande.READY),
+                Arguments.of(StatutCommande.CANCELLED, StatutCommande.DISTRIBUTED)
+        );
+    }
+
+    @Test
+    void conditionalTransitionLeavesTerminalStatusUnchangedForRepeatedRequest() {
+        Commande distributed = commandeAvecStatut(StatutCommande.DISTRIBUTED);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(distributed));
+
+        ConditionalTransitionResult result = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.DISTRIBUTED,
+                StatutCommande.DISTRIBUTED
+        );
+
+        assertThat(result).isEqualTo(ConditionalTransitionResult.NOT_ELIGIBLE);
+        verify(commandeRepository, never()).save(any(Commande.class));
+        verify(mouvementStockRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelStillRestoresStockAndMakesCancelledTerminal() {
+        Produit produit = produitAvecStock("8.00");
+        Commande commande = commandeAvecStatut(StatutCommande.CONFIRMED);
+        commande.setLignes(List.of(LigneCommande.builder()
+                .produit(produit)
+                .quantite(new BigDecimal("2.00"))
+                .build()));
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(produitRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(produit));
+        when(produitRepository.save(produit)).thenReturn(produit);
+        when(mouvementStockRepository.save(any(MouvementStock.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        CommandeResponseDto cancelled = commandeService.cancel(99L);
+
+        assertThat(cancelled.getStatut()).isEqualTo(StatutCommande.CANCELLED);
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("10.00");
+
+        CommandeResponseDto cancelledAgain = commandeService.cancel(99L);
+
+        assertThat(cancelledAgain.getStatut()).isEqualTo(StatutCommande.CANCELLED);
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("10.00");
+        verify(commandeRepository, times(1)).save(commande);
+        verify(generatedEmailService, times(1)).generateOrderCancellation(commande);
+
+        assertThatThrownBy(() -> commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.CANCELLED,
+                StatutCommande.CONFIRMED
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void cancelRejectsCancellationAfterDistribution() {
+        Commande commande = commandeAvecStatut(StatutCommande.DISTRIBUTED);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+
+        assertThatThrownBy(() -> commandeService.cancel(99L))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.DISTRIBUTED);
+        verify(commandeRepository, never()).save(any(Commande.class));
+        verify(produitRepository, never()).findByIdForUpdate(any());
+        verify(generatedEmailService, never()).generateOrderCancellation(any());
+    }
+
+    @Test
+    void reportPreparationIncidentStoresTrimmedReasonWithoutChangingStatus() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        CommandeResponseDto response = commandeService.reportPreparationIncident(
+                99L,
+                CommandeIncidentPreparationDto.builder().motif("  Produit manquant  ").build()
+        );
+
+        assertThat(response.isIncidentPreparation()).isTrue();
+        assertThat(response.getMotifIncidentPreparation()).isEqualTo("Produit manquant");
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.IN_PREP);
+    }
+
+    @Test
+    void reportPreparationIncidentRejectsBlankReason() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+
+        assertThatThrownBy(() -> commandeService.reportPreparationIncident(
+                99L,
+                CommandeIncidentPreparationDto.builder().motif("   ").build()
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        verify(commandeRepository, never()).save(any(Commande.class));
+    }
+
+    @Test
+    void resolvePreparationIncidentClearsReasonWithoutChangingStatus() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        commande.setIncidentPreparation(true);
+        commande.setMotifIncidentPreparation("Produit endommage");
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        CommandeResponseDto response = commandeService.resolvePreparationIncident(99L);
+
+        assertThat(response.isIncidentPreparation()).isFalse();
+        assertThat(response.getMotifIncidentPreparation()).isNull();
+        assertThat(response.getStatut()).isEqualTo(StatutCommande.IN_PREP);
+    }
+
+    @Test
+    void openPreparationIncidentBlocksProgressUntilResolved() {
+        Commande commande = commandeAvecStatut(StatutCommande.IN_PREP);
+        commande.setIncidentPreparation(true);
+        commande.setMotifIncidentPreparation("Produit manquant");
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+
+        ConditionalTransitionResult result = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.IN_PREP,
+                StatutCommande.READY
+        );
+
+        assertThat(result).isEqualTo(ConditionalTransitionResult.BLOCKED_BY_INCIDENT);
+        verify(commandeRepository, never()).save(any(Commande.class));
+        verify(generatedEmailService, never()).generateOrderReady(any());
+    }
+
+    @Test
+    void conditionalTransitionUsesLockAndIsIdempotentAtSchedulerBoundary() {
+        Commande commande = commandeAvecStatut(StatutCommande.CONFIRMED);
+        when(commandeRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+
+        ConditionalTransitionResult first = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.CONFIRMED,
+                StatutCommande.IN_PREP
+        );
+        ConditionalTransitionResult second = commandeService.transitionStatusIfCurrent(
+                99L,
+                StatutCommande.CONFIRMED,
+                StatutCommande.IN_PREP
+        );
+
+        assertThat(first).isEqualTo(ConditionalTransitionResult.TRANSITIONED);
+        assertThat(second).isEqualTo(ConditionalTransitionResult.NOT_ELIGIBLE);
+        assertThat(commande.getStatut()).isEqualTo(StatutCommande.IN_PREP);
+        verify(commandeRepository, times(2)).findByIdForUpdate(99L);
+        verify(commandeRepository, times(1)).save(commande);
+    }
+
+    @Test
+    void generateUniqueWithdrawalCodeUsesCurrentUuidFormat() {
+        String code = commandeService.generateUniqueWithdrawalCode();
+
+        assertThat(code).matches("[0-9A-F]{6}");
+        verify(commandeRepository).existsByCodeRetrait(code);
+    }
+
+    @Test
+    void generateUniqueWithdrawalCodeRetriesAfterCollision() {
+        Iterator<String> candidates = List.of("ABC123", "DEF456").iterator();
+        ReflectionTestUtils.setField(
+                commandeService,
+                "withdrawalCodeGenerator",
+                (Supplier<String>) candidates::next
+        );
+        when(commandeRepository.existsByCodeRetrait("ABC123")).thenReturn(true);
+        when(commandeRepository.existsByCodeRetrait("DEF456")).thenReturn(false);
+
+        String code = commandeService.generateUniqueWithdrawalCode();
+
+        assertThat(code).isEqualTo("DEF456");
+        verify(commandeRepository).existsByCodeRetrait("ABC123");
+        verify(commandeRepository).existsByCodeRetrait("DEF456");
+    }
+
+    @Test
+    void repeatedWithdrawalDoesNotDuplicateSaleOrPaymentDate() {
+        Produit produit = produitAvecStock("8.00");
+        Commande commande = commandeAvecStatut(StatutCommande.READY);
+        commande.setCodeRetrait("ABC123");
+        commande.setLignes(List.of(LigneCommande.builder()
+                .produit(produit)
+                .quantite(new BigDecimal("2.00"))
+                .build()));
+        when(commandeRepository.findByCodeRetraitForUpdate("ABC123")).thenReturn(Optional.of(commande));
+        when(commandeRepository.save(commande)).thenReturn(commande);
+        when(mouvementStockRepository.save(any(MouvementStock.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CommandeResponseDto first = commandeService.confirmWithdrawalByCode("ABC123");
+        LocalDateTime firstPaymentDate = commande.getDatePaiement();
+        CommandeResponseDto second = commandeService.confirmWithdrawalByCode("ABC123");
+
+        assertThat(first.getStatut()).isEqualTo(StatutCommande.DISTRIBUTED);
+        assertThat(second.getStatut()).isEqualTo(StatutCommande.DISTRIBUTED);
+        assertThat(commande.getDatePaiement()).isEqualTo(firstPaymentDate);
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("8.00");
+        verify(commandeRepository, times(1)).save(commande);
+        verify(mouvementStockRepository, times(1)).save(any(MouvementStock.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonReadyWithdrawalStatuses")
+    void confirmWithdrawalRejectsOrdersThatAreNotReady(StatutCommande status) {
+        Commande commande = commandeAvecStatut(status);
+        commande.setCodeRetrait("ABC123");
+        when(commandeRepository.findByCodeRetraitForUpdate("ABC123")).thenReturn(Optional.of(commande));
+
+        assertThatThrownBy(() -> commandeService.confirmWithdrawalByCode("ABC123"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(commandeRepository, never()).save(any(Commande.class));
+        verify(mouvementStockRepository, never()).save(any());
+    }
+
+    private static Stream<Arguments> nonReadyWithdrawalStatuses() {
+        return Stream.of(
+                Arguments.of(StatutCommande.CONFIRMED),
+                Arguments.of(StatutCommande.IN_PREP),
+                Arguments.of(StatutCommande.CANCELLED)
+        );
+    }
+
     private Membre membreActif() {
         return Membre.builder()
                 .id(4L)
@@ -379,6 +746,17 @@ class CommandeServiceTest {
                 .prenom("Marie")
                 .email("marie@terra.test")
                 .actif(true)
+                .build();
+    }
+
+    private Commande commandeAvecStatut(StatutCommande statut) {
+        return Commande.builder()
+                .id(99L)
+                .numero("PC01-20260928-000099")
+                .statut(statut)
+                .paye(false)
+                .dateRetraitPrevu(LocalDateTime.now().plusDays(2))
+                .membre(membreActif())
                 .build();
     }
 

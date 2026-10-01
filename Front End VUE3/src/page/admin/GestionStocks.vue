@@ -2,7 +2,7 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">Retour au dashboard</router-link>
+        <router-link to="/admin" class="back-link">Retour au tableau de bord</router-link>
         <h1>Gestion des stocks</h1>
         <p>Consulter et ajuster les stocks reels des produits</p>
       </div>
@@ -14,7 +14,7 @@
           Stock bas: <strong>{{ stocksBas.length }}</strong>
         </span>
         <span class="stat-badge">
-          Total: <strong>{{ stocks.length }}</strong>
+          Total : <strong>{{ stocks.length }}</strong>
         </span>
       </div>
     </div>
@@ -36,7 +36,7 @@
           <input
             v-model="searchTerm"
             type="text"
-            placeholder="Produit ou categorie..."
+            placeholder="Produit ou catégorie..."
             class="filter-input"
           />
         </div>
@@ -67,7 +67,7 @@
         <thead>
           <tr>
             <th>Produit</th>
-            <th>Categorie</th>
+            <th>Catégorie</th>
             <th>Stock actuel</th>
             <th>Statut</th>
             <th>Actif</th>
@@ -103,7 +103,7 @@
       </table>
       <div v-if="!loading && filteredStocks.length === 0" class="empty-state">
         <div class="empty-icon">...</div>
-        <h3>Aucun produit trouve</h3>
+        <h3>Aucun produit trouvé</h3>
       </div>
     </div>
 
@@ -112,15 +112,15 @@
       <div class="legend-items">
         <div class="legend-item">
           <span class="status-badge danger">Rupture</span>
-          <p>Stock egal a 0</p>
+          <p>Stock égal à 0</p>
         </div>
         <div class="legend-item">
           <span class="status-badge warning">Stock bas</span>
-          <p>Stock strictement positif et inferieur ou egal a 5</p>
+          <p>Stock strictement positif et inférieur ou égal à 5</p>
         </div>
         <div class="legend-item">
           <span class="status-badge success">Disponible</span>
-          <p>Stock superieur a 5</p>
+          <p>Stock supérieur à 5</p>
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ async function loadStocks() {
       .map(produit => ({
         id: produit.id,
         produit: produit.nom,
-        categorie: produit.categorie || 'Sans categorie',
+        categorie: produit.categorie || 'Sans catégorie',
         stockActuel: Number(produit.stockActuel ?? produit.stock ?? 0),
         unite: produit.unite || 'piece',
         actif: produit.actif !== false,
@@ -271,7 +271,7 @@ async function submitAdjustment() {
 
   const numericValue = Number(stockFormValue.value)
   if (Number.isNaN(numericValue) || numericValue < 0) {
-    apiError.value = 'Le stock doit etre un nombre positif ou nul.'
+    apiError.value = 'Le stock doit être un nombre positif ou nul.'
     return
   }
 
@@ -280,7 +280,7 @@ async function submitAdjustment() {
   successMessage.value = ''
   try {
     await produitsApi.adjustStock(selectedStock.value.id, numericValue, categories.value)
-    successMessage.value = `Stock mis a jour pour ${selectedStock.value.produit}.`
+    successMessage.value = `Stock mis à jour pour ${selectedStock.value.produit}.`
     closeModal()
     await loadStocks()
   } catch (error) {

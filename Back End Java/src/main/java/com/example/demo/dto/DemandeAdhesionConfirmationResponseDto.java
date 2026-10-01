@@ -1,7 +1,5 @@
 package com.example.demo.dto;
 
-import java.time.LocalDateTime;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,13 +8,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class PasswordTokenResponseDto {
+public class DemandeAdhesionConfirmationResponseDto {
 
-    private String email;
-    private String resetLink;
-    private LocalDateTime expiresAt;
+    private String statut;
     private String message;
 }

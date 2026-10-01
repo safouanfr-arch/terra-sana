@@ -2,6 +2,9 @@ package com.example.demo.model;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.EmailNotificationType;
 
 import jakarta.persistence.Column;
@@ -34,6 +37,7 @@ public class EmailTemplate {
     @Id
     @EqualsAndHashCode.Include
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "type_template", length = 50, nullable = false)
     private EmailNotificationType type;
 

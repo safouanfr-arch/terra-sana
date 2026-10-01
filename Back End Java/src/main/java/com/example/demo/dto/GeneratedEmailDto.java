@@ -29,6 +29,7 @@ public class GeneratedEmailDto {
     private LocalDateTime dateEnvoi;
     private String erreurEnvoi;
     private Long commandeId;
+    private Long creneauCollecteId;
     private Long membreId;
     private Long produitId;
     private Long demandeAdhesionId;

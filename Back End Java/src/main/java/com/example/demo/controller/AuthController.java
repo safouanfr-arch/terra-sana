@@ -22,7 +22,7 @@ import com.example.demo.dto.LoginRequestDto;
 import com.example.demo.dto.PasswordChangeDto;
 import com.example.demo.dto.PasswordResetCompleteDto;
 import com.example.demo.dto.PasswordResetRequestDto;
-import com.example.demo.dto.PasswordTokenResponseDto;
+import com.example.demo.dto.PasswordResetResponseDto;
 import com.example.demo.dto.PasswordTokenStatusDto;
 import com.example.demo.security.AppUserPrincipal;
 import com.example.demo.service.AuthService;
@@ -84,7 +84,7 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/request")
-    public PasswordTokenResponseDto requestPasswordReset(@Valid @RequestBody PasswordResetRequestDto dto) {
+    public PasswordResetResponseDto requestPasswordReset(@Valid @RequestBody PasswordResetRequestDto dto) {
         return authService.requestPasswordReset(dto);
     }
 

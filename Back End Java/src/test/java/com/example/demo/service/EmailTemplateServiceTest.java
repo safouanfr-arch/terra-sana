@@ -76,4 +76,19 @@ public class EmailTemplateServiceTest {
         assertThat(rendered.subject()).isEqualTo("Sujet test Marie");
         assertThat(rendered.body()).isEqualTo("Bonjour Marie");
     }
+
+    @Test
+    void defaultTemplatesExposeCorrectFrenchLabels() {
+        EmailTemplateDto confirmation = emailTemplateService.getDefaultTemplateDto(
+                EmailNotificationType.ORDER_CONFIRMATION
+        );
+        EmailTemplateDto membership = emailTemplateService.getDefaultTemplateDto(
+                EmailNotificationType.MEMBERSHIP_VALIDATION
+        );
+
+        assertThat(confirmation.getContenu())
+                .contains("confirmée", "Créneau");
+        assertThat(membership.getObjet())
+                .isEqualTo("Votre adhésion Terra Sana est validée");
+    }
 }

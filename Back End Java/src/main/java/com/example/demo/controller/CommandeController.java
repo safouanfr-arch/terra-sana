@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,8 +15,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.CommandeCreateRequestDto;
+import com.example.demo.dto.CommandeIncidentPreparationDto;
 import com.example.demo.dto.CommandeResponseDto;
-import com.example.demo.dto.CommandeStatutUpdateDto;
 import com.example.demo.security.AppUserPrincipal;
 import com.example.demo.service.CommandeService;
 
@@ -56,8 +57,16 @@ public class CommandeController {
         return commandeService.cancelForMembre(id, principal.getId());
     }
 
-    @PutMapping("/{id}/statut")
-    public CommandeResponseDto updateStatus(@PathVariable("id") Long id, @Valid @RequestBody CommandeStatutUpdateDto dto) {
-        return commandeService.updateStatus(id, dto);
+    @PutMapping("/{id}/incident-preparation")
+    public CommandeResponseDto reportPreparationIncident(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody CommandeIncidentPreparationDto dto
+    ) {
+        return commandeService.reportPreparationIncident(id, dto);
+    }
+
+    @DeleteMapping("/{id}/incident-preparation")
+    public CommandeResponseDto resolvePreparationIncident(@PathVariable("id") Long id) {
+        return commandeService.resolvePreparationIncident(id);
     }
 }

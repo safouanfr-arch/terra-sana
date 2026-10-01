@@ -57,6 +57,32 @@ public class ProduitServiceTest {
     private ProduitService produitService;
 
     @Test
+    void updateNameKeepsStockUnchangedEvenWhenDtoContainsAnotherStock() {
+        Produit produit = productWithStock("10.00");
+        ProduitDto dto = updateDto("Carottes nouvelles", "3.60", "999.00");
+        stubProductUpdate(produit);
+
+        ProduitDto result = produitService.update(5L, dto);
+
+        assertThat(produit.getNom()).isEqualTo("Carottes nouvelles");
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("10.00");
+        assertThat(result.getStockActuel()).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void updatePriceKeepsStockUnchangedEvenWhenDtoContainsAnotherStock() {
+        Produit produit = productWithStock("10.00");
+        ProduitDto dto = updateDto("Carottes", "4.25", "0.00");
+        stubProductUpdate(produit);
+
+        ProduitDto result = produitService.update(5L, dto);
+
+        assertThat(produit.getPrixUnitaire()).isEqualByComparingTo("4.25");
+        assertThat(produit.getStockActuel()).isEqualByComparingTo("10.00");
+        assertThat(result.getStockActuel()).isEqualByComparingTo("10.00");
+    }
+
+    @Test
     void adjustStockUpdatesProductAndCreatesMouvement() {
         Produit produit = Produit.builder()
                 .Id(5L)
@@ -131,5 +157,40 @@ public class ProduitServiceTest {
         ))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    private void stubProductUpdate(Produit produit) {
+        when(produitRepository.findById(5L)).thenReturn(Optional.of(produit));
+        when(categorieRepository.findById(1L)).thenReturn(Optional.of(produit.getCategorie()));
+        when(produitRepository.save(any(Produit.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(promotionService.applyPromotionToDto(eq(produit), any(ProduitDto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(1));
+    }
+
+    private Produit productWithStock(String stock) {
+        return Produit.builder()
+                .Id(5L)
+                .nom("Carottes")
+                .description("Carottes locales")
+                .prixUnitaire(new BigDecimal("3.60"))
+                .unite(UniteProduit.KG)
+                .tauxTva(new BigDecimal("6.00"))
+                .stockActuel(new BigDecimal(stock))
+                .categorie(Categorie.builder().id(1L).nom("Legumes").build())
+                .actif(true)
+                .build();
+    }
+
+    private ProduitDto updateDto(String name, String price, String stock) {
+        return ProduitDto.builder()
+                .nom(name)
+                .description("Carottes locales")
+                .prixUnitaire(new BigDecimal(price))
+                .unite(UniteProduit.KG)
+                .tauxTva(new BigDecimal("6.00"))
+                .stockActuel(new BigDecimal(stock))
+                .actif(true)
+                .categorieId(1L)
+                .build();
     }
 }

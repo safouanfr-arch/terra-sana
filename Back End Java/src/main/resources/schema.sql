@@ -1,0 +1,10 @@
+-- Older H2 databases stored these extensible Java enums as native H2 ENUMs.
+-- Convert them without deleting data so newly added notification types remain usable.
+ALTER TABLE IF EXISTS TEMAIL_TEMPLATE
+    ALTER COLUMN TYPE_TEMPLATE SET DATA TYPE VARCHAR(50);
+
+ALTER TABLE IF EXISTS TEMAIL_GENERE
+    ALTER COLUMN TYPE_EMAIL SET DATA TYPE VARCHAR(50);
+
+ALTER TABLE IF EXISTS TDEMANDE_ADHESION
+    ALTER COLUMN STATUT SET DATA TYPE VARCHAR(20);

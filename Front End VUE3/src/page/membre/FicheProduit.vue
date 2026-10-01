@@ -17,7 +17,15 @@
     <div class="fiche-produit">
       <div class="fiche-image-section">
         <div class="fiche-image-main">
-          <img class="image-display" :src="getMainImageSrc()" :alt="`Image de ${produit?.nom}`" @error="onImgError($event)" />
+          <button
+            type="button"
+            class="image-zoom-trigger"
+            aria-label="Agrandir l'image du produit"
+            @click="openLightbox"
+          >
+            <img class="image-display" :src="getMainImageSrc()" :alt="`Image de ${produit?.nom}`" @error="onImgError($event)" />
+            <span class="image-zoom-hint">Agrandir</span>
+          </button>
         </div>
         
         <!-- Photo gallery thumbnails -->
@@ -52,7 +60,7 @@
         <div class="fiche-badges">
           <span v-if="produit.badges?.local" class="badge badge-local">Local</span>
           <span v-if="produit.badges?.bio" class="badge badge-bio">Bio</span>
-          <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien">Vegetarien</span>
+          <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien">Végétarien</span>
           <span v-if="produit.badges?.vegan" class="badge badge-vegan">Vegan</span>
         </div>
       </div>
@@ -85,26 +93,26 @@
 
         <div class="fiche-details">
           <div class="detail-item">
-            <span class="detail-label">Producteur:</span>
+            <span class="detail-label">Producteur :</span>
             <span class="detail-value">{{ produit.producteur }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Origine:</span>
+            <span class="detail-label">Origine :</span>
             <span class="detail-value">{{ produit.origine }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Unite:</span>
+            <span class="detail-label">Unité :</span>
             <span class="detail-value">{{ produit.unite }}</span>
           </div>
           <div v-if="produit.datePeremption" class="detail-item">
-            <span class="detail-label">Peremption:</span>
+            <span class="detail-label">Péremption :</span>
             <span class="detail-value">{{ formatDate(produit.datePeremption) }}</span>
           </div>
         </div>
 
         <div class="fiche-actions">
           <div class="quantite-selector">
-            <label>Quantité:</label>
+            <label>Quantité :</label>
             <div class="quantite-controls">
               <button @click="quantite = Math.max(1, quantite - 1)" :disabled="quantite <= 1">−</button>
               <input 
@@ -119,14 +127,14 @@
           </div>
 
           <div class="total-price">
-            <span class="total-label">Total:</span>
+            <span class="total-label">Total :</span>
             <span class="total-montant">{{ (calculatePrixTTC(produit) * quantite).toFixed(2) }} €</span>
           </div>
         </div>
 
         <div class="fiche-buttons">
           <button :class="['btn', 'btn-primary', { 'btn-success': added }]" @click="handleAddToCart">
-            {{ added ? 'Ajoute au panier' : 'Ajouter au panier' }}
+            {{ added ? 'Ajouté au panier' : 'Ajouter au panier' }}
           </button>
           <button class="btn btn-secondary" @click="handleBuyNow">Commander maintenant</button>
         </div>
@@ -146,10 +154,36 @@
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="lightboxOpen"
+      class="product-lightbox"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="`Image agrandie de ${produit?.nom}`"
+      @click.self="closeLightbox"
+    >
+      <button
+        type="button"
+        class="lightbox-close"
+        aria-label="Fermer l'image agrandie"
+        @click="closeLightbox"
+      >
+        &times;
+      </button>
+      <img
+        class="lightbox-image"
+        :src="getMainImageSrc()"
+        :alt="`Image agrandie de ${produit?.nom}`"
+        @error="onImgError($event)"
+      />
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 // ...existing code...
 import { usePanierStore } from '../../stores/panierStore'
@@ -166,6 +200,7 @@ const quantite = ref(1)
 const added = ref(false)
 const currentImage = ref(null)
 const currentImageType = ref('emoji')
+const lightboxOpen = ref(false)
 
 const produit = computed(() => produitsData.value.find(p => p.id === parseInt(route.params.id)))
 
@@ -182,6 +217,7 @@ const hasPhotos = computed(() => {
 })
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
   apiError.value = ''
   try {
     const categories = await categoriesApi.listActive()
@@ -203,6 +239,10 @@ onMounted(async () => {
     apiError.value = getApiErrorMessage(error)
     produitsData.value = []
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 const selectImage = (type, imageUrl) => {
@@ -228,6 +268,20 @@ function onImgError(ev) {
 
 function onMiniError(ev, p) {
   ev.target.src = productPlaceholder(p?.nom, p?.categorie)
+}
+
+function openLightbox() {
+  lightboxOpen.value = true
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Escape' && lightboxOpen.value) {
+    closeLightbox()
+  }
 }
 
 const calculatePrixTTC = (produit) => {
@@ -290,6 +344,16 @@ const handleBuyNow = () => {
 }
 
 /* Main image */
+.image-zoom-trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
 .image-display {
   width: 100%;
   aspect-ratio: 16/9;
@@ -297,6 +361,54 @@ const handleBuyNow = () => {
   border-radius: 16px;
   background: #eef2f7;
   box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  display: block;
+}
+
+.image-zoom-hint {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(24, 35, 31, 0.86);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.product-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 3.5rem 1.25rem 1.25rem;
+  background: rgba(12, 18, 15, 0.9);
+}
+
+.lightbox-image {
+  display: block;
+  max-width: min(1100px, 94vw);
+  max-height: 88vh;
+  object-fit: contain;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 50%;
+  background: rgba(24, 35, 31, 0.75);
+  color: white;
+  cursor: pointer;
+  font-size: 2rem;
+  line-height: 1;
 }
 
 .fiche-image-gallery {
@@ -518,6 +630,15 @@ const handleBuyNow = () => {
 
   .fiche-details {
     grid-template-columns: 1fr;
+  }
+
+  .product-lightbox {
+    padding: 4rem 0.75rem 0.75rem;
+  }
+
+  .lightbox-image {
+    max-width: 100%;
+    max-height: 82vh;
   }
 }
 

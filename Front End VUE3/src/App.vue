@@ -12,7 +12,7 @@
 
     <footer class="footer">
       <p>&copy; 2026 Terra Sana</p>
-      <span>Plateforme cooperative pour la commande et le retrait de produits locaux.</span>
+      <span>Plateforme coopérative pour la commande et le retrait de produits locaux.</span>
     </footer>
   </div>
 </template>

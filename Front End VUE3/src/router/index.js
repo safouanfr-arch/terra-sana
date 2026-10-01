@@ -6,6 +6,8 @@ import { useAuthStore } from '../stores/authStore'
 import Accueil from '../page/Accueil.vue'
 import Connexion from '../page/Connexion.vue'
 import DemandeAdhesion from '../page/DemandeAdhesion.vue'
+import ConfirmationAdhesion from '../page/ConfirmationAdhesion.vue'
+import ConditionsAdhesion from '../page/ConditionsAdhesion.vue'
 import CreationMotDePasse from '../page/CreationMotDePasse.vue'
 import ReinitialisationMotDePasse from '../page/ReinitialisationMotDePasse.vue'
 import AccesRefuse from '../page/AccesRefuse.vue'
@@ -48,6 +50,16 @@ const routes = [
     path: '/demande-adhesion',
     name: 'DemandeAdhesion',
     component: DemandeAdhesion
+  },
+  {
+    path: '/confirmation-adhesion',
+    name: 'ConfirmationAdhesion',
+    component: ConfirmationAdhesion
+  },
+  {
+    path: '/conditions-adhesion',
+    name: 'ConditionsAdhesion',
+    component: ConditionsAdhesion
   },
   {
     path: '/creation-mot-de-passe/:token',

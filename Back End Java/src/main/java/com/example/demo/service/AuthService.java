@@ -1,7 +1,6 @@
 package com.example.demo.service;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,7 +20,7 @@ import com.example.demo.dto.LoginRequestDto;
 import com.example.demo.dto.PasswordChangeDto;
 import com.example.demo.dto.PasswordResetCompleteDto;
 import com.example.demo.dto.PasswordResetRequestDto;
-import com.example.demo.dto.PasswordTokenResponseDto;
+import com.example.demo.dto.PasswordResetResponseDto;
 import com.example.demo.dto.PasswordTokenStatusDto;
 import com.example.demo.model.Administrateur;
 import com.example.demo.model.Membre;
@@ -34,12 +33,15 @@ import lombok.RequiredArgsConstructor;
 public class AuthService {
 
     private static final int TOKEN_VALIDITY_HOURS = 24;
+    private static final String PASSWORD_RESET_PUBLIC_MESSAGE =
+            "Si un compte correspond \u00e0 cette adresse, un email de r\u00e9initialisation a \u00e9t\u00e9 envoy\u00e9.";
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final AdministrateurRepository administrateurRepository;
     private final MembreRepository membreRepository;
     private final PasswordEncoder passwordEncoder;
     private final GeneratedEmailService generatedEmailService;
+    private final PasswordTokenService passwordTokenService;
 
     @Value("${app.frontend-base-url:http://localhost:5173}")
     private String frontendBaseUrl;
@@ -125,22 +127,25 @@ public class AuthService {
     }
 
     @Transactional
-    public PasswordTokenResponseDto requestPasswordReset(PasswordResetRequestDto dto) {
-        Membre membre = membreRepository.findByEmailIgnoreCase(normalizeEmail(dto.getEmail()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucun membre ne correspond a cette adresse email."));
+    public PasswordResetResponseDto requestPasswordReset(PasswordResetRequestDto dto) {
+        membreRepository.findByEmailIgnoreCase(normalizeEmail(dto.getEmail()))
+                .filter(membre -> !Boolean.FALSE.equals(membre.getActif()))
+                .ifPresent(membre -> {
+                    IssuedPasswordToken issuedToken = issuePasswordToken(membre);
+                    safeEmailGeneration(
+                            () -> generatedEmailService.generatePasswordSetup(membre, issuedToken.passwordLink()),
+                            "reinitialisation mot de passe " + membre.getEmail()
+                    );
+                });
 
-        if (Boolean.FALSE.equals(membre.getActif())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce compte est suspendu.");
-        }
-
-        PasswordTokenResponseDto response = issuePasswordToken(membre, "Lien de reinitialisation genere.");
-        safeEmailGeneration(() -> generatedEmailService.generatePasswordSetup(membre, response.getResetLink()), "reinitialisation mot de passe " + membre.getEmail());
-        return response;
+        return PasswordResetResponseDto.builder()
+                .message(PASSWORD_RESET_PUBLIC_MESSAGE)
+                .build();
     }
 
     @Transactional(readOnly = true)
     public PasswordTokenStatusDto getPasswordTokenStatus(String token) {
-        return membreRepository.findByTokenMotDePasse(token)
+        return membreRepository.findByTokenMotDePasse(passwordTokenService.hash(token))
                 .map(membre -> {
                     boolean valid = membre.getDateExpirationTokenMotDePasse() != null
                             && membre.getDateExpirationTokenMotDePasse().isAfter(LocalDateTime.now());
@@ -158,7 +163,7 @@ public class AuthService {
 
     @Transactional
     public void completePasswordReset(String token, PasswordResetCompleteDto dto) {
-        Membre membre = membreRepository.findByTokenMotDePasse(token)
+        Membre membre = membreRepository.findByTokenMotDePasse(passwordTokenService.hash(token))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lien de creation de mot de passe introuvable."));
 
         if (membre.getDateExpirationTokenMotDePasse() == null
@@ -174,18 +179,8 @@ public class AuthService {
     }
 
     @Transactional
-    public PasswordTokenResponseDto issuePasswordTokenForMember(Membre membre, String message) {
-        return issuePasswordToken(membre, message);
-    }
-
-    @Transactional(readOnly = true)
-    public String getActivePasswordLinkForEmail(String email) {
-        return membreRepository.findByEmailIgnoreCase(normalizeEmail(email))
-                .filter(membre -> membre.getTokenMotDePasse() != null
-                        && membre.getDateExpirationTokenMotDePasse() != null
-                        && membre.getDateExpirationTokenMotDePasse().isAfter(LocalDateTime.now()))
-                .map(membre -> buildPasswordLink(membre.getTokenMotDePasse()))
-                .orElse(null);
+    public IssuedPasswordToken issuePasswordTokenForMember(Membre membre) {
+        return issuePasswordToken(membre);
     }
 
     private AppUserPrincipal authenticateAdministrateur(Administrateur admin, String rawPassword) {
@@ -266,18 +261,12 @@ public class AuthService {
                 .build();
     }
 
-    private PasswordTokenResponseDto issuePasswordToken(Membre membre, String message) {
-        String token = UUID.randomUUID().toString().replace("-", "");
+    private IssuedPasswordToken issuePasswordToken(Membre membre) {
+        PasswordTokenService.GeneratedToken token = passwordTokenService.generate();
         LocalDateTime expiration = LocalDateTime.now().plusHours(TOKEN_VALIDITY_HOURS);
-        membre.definirTokenMotDePasse(token, expiration);
+        membre.definirTokenMotDePasse(token.hash(), expiration);
         membreRepository.save(membre);
-
-        return PasswordTokenResponseDto.builder()
-                .email(membre.getEmail())
-                .resetLink(buildPasswordLink(token))
-                .expiresAt(expiration)
-                .message(message)
-                .build();
+        return new IssuedPasswordToken(buildPasswordLink(token.rawToken()), expiration);
     }
 
     private String buildPasswordLink(String token) {
@@ -320,6 +309,9 @@ public class AuthService {
     private String defaultPays(String pays) {
         String normalized = trimToNull(pays);
         return normalized != null ? normalized : "Belgique";
+    }
+
+    public record IssuedPasswordToken(String passwordLink, LocalDateTime expiresAt) {
     }
 
     private void safeEmailGeneration(RunnableWithException action, String context) {

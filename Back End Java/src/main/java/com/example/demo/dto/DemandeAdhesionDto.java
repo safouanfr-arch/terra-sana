@@ -31,6 +31,7 @@ public class DemandeAdhesionDto {
     private StatutDemande statut;
     private LocalDateTime dateSoumission;
     private LocalDateTime dateTraitement;
+    private LocalDateTime conditionsAccepteesAt;
+    private String conditionsVersion;
     private String administrateurEmail;
-    private String lienActivation;
 }

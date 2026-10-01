@@ -11,7 +11,7 @@ function escapeXml(value = '') {
 
 export function productPlaceholder(name = 'Produit', categorie = '') {
   const label = escapeXml((name || 'Produit').toString().trim().slice(0, 30) || 'Produit')
-  const categoryLabel = escapeXml((categorie || 'Selection locale').toString().trim().slice(0, 24) || 'Selection locale')
+  const categoryLabel = escapeXml((categorie || 'Sélection locale').toString().trim().slice(0, 24) || 'Sélection locale')
 
   const palette = categorie && categorie.toLowerCase().includes('lait')
     ? { base: '#e7eef4', accent: '#6b879b', accentSoft: '#cddbe6' }

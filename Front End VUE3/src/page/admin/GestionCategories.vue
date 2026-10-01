@@ -2,11 +2,11 @@
   <div class="admin-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link">← Retour au dashboard</router-link>
-        <h1>Gestion des categories</h1>
+        <router-link to="/admin" class="back-link">← Retour au tableau de bord</router-link>
+        <h1>Gestion des catégories</h1>
         <p>Gérer les catégories de produits</p>
       </div>
-      <button class="btn btn-primary" @click="handleAdd">Nouvelle categorie</button>
+      <button class="btn btn-primary" @click="handleAdd">Nouvelle catégorie</button>
     </div>
 
     <div v-if="apiError" class="alert alert-error">{{ apiError }}</div>
@@ -29,7 +29,7 @@
     <div v-if="showModal" class="modal-overlay" @click="showModal = false">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <h2>{{ editMode ? 'Modifier la categorie' : 'Nouvelle categorie' }}</h2>
+          <h2>{{ editMode ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h2>
           <button class="modal-close" @click="showModal = false">×</button>
         </div>
         <div class="modal-body">

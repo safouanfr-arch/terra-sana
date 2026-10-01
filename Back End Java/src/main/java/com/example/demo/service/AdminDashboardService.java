@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +41,11 @@ public class AdminDashboardService {
         return AdminDashboardStatsDto.builder()
                 .membresTotal(membreRepository.count())
                 .membresSuspendus(membreRepository.countByActifFalse())
-                .demandesTotal(demandeAdhesionRepository.count())
+                .demandesTotal(demandeAdhesionRepository.countByStatutIn(List.of(
+                        StatutDemande.EN_ATTENTE,
+                        StatutDemande.APPROUVEE,
+                        StatutDemande.REFUSEE
+                )))
                 .demandesEnAttente(demandeAdhesionRepository.countByStatut(StatutDemande.EN_ATTENTE))
                 .produitsTotal(produitRepository.count())
                 .produitsActifs(produitRepository.countByActifTrue())

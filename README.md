@@ -65,7 +65,7 @@ Les journaux de démarrage sont conservés localement dans `.terra-sana-runtime/
 
 ### Prérequis
 
-- JDK 17 ou supérieur
+- JDK 17 ou supérieur (`java -version`)
 - Node.js 20 ou supérieur
 
 ### Backend
@@ -77,7 +77,26 @@ cd "Back End Java"
 
 L'API démarre sur `http://localhost:8081`. La base locale est créée dans `Back End Java/data/` et n'est pas versionnée.
 
-L'envoi d'emails est facultatif. Pour l'activer, copier `config/application-secrets.example.properties` vers `config/application-secrets.properties`, renseigner ses propres paramètres SMTP et conserver ce fichier uniquement en local.
+La configuration standard utilise une base H2 persistante dans `data/terra-sana.mv.db`. Les tests utilisent une base H2 en mémoire distincte.
+
+#### SMTP
+
+L'envoi d'emails est facultatif et désactivé par défaut. Pour l'activer, copier `config/application-secrets.example.properties` vers `config/application-secrets.properties`, puis renseigner localement :
+
+- `spring.mail.host` et `spring.mail.port` ;
+- `spring.mail.username` et `spring.mail.password` ;
+- `app.mail.from` ;
+- `app.mail.enabled=true`.
+
+`config/application-secrets.properties` est chargé de manière optionnelle et reste exclu de Git.
+
+#### Préparation et schedulers
+
+`TERRA_SANA_PREPARATION_EMAIL` définit l'adresse commune qui reçoit automatiquement le dossier PDF de préparation. Si cette variable est absente, l'envoi automatique du dossier est ignoré proprement.
+
+- `app.order-preparation.enabled` active le passage automatique en préparation à H-24 ; `app.order-preparation.cron` règle sa fréquence.
+- `app.order-reminder.enabled` active le rappel de retrait J-1 ; `app.order-reminder.cron` règle sa fréquence.
+- Les deux traitements utilisent la timezone `Europe/Brussels`.
 
 ### Frontend
 
@@ -87,7 +106,7 @@ npm ci
 npm run dev
 ```
 
-L'interface est disponible sur `http://localhost:5173`.
+L'interface est disponible sur `http://localhost:5173`. Elle utilise `http://localhost:8081/api` par défaut. Pour changer cette URL, copier `.env.example` vers `.env` puis adapter `VITE_API_BASE_URL`.
 
 ## Vérifications
 

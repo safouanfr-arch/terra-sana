@@ -2,9 +2,9 @@
   <div class="admin-page archives-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/membre" class="back-link">Retour a mon espace</router-link>
+        <router-link to="/membre" class="back-link">Retour à mon espace</router-link>
         <h1>Mes archives</h1>
-        <p>Historique de vos commandes cloturees depuis les donnees reelles du backend.</p>
+        <p>Historique de vos commandes clôturées à partir des données réelles du service.</p>
       </div>
     </div>
 
@@ -17,7 +17,7 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Numero, point, produit..."
+            placeholder="Numéro, point, produit..."
             class="filter-input"
           />
         </div>
@@ -25,13 +25,13 @@
         <div class="filter-group">
           <label>Statut</label>
           <select v-model="filterStatut" class="filter-select">
-            <option value="terminees">Commandes cloturees</option>
+            <option value="terminees">Commandes clôturées</option>
             <option value="tous">Tous les statuts</option>
-            <option value="CONFIRMED">Confirmee</option>
-            <option value="IN_PREP">En preparation</option>
-            <option value="READY">Prete</option>
-            <option value="DISTRIBUTED">Distribuee</option>
-            <option value="CANCELLED">Annulee</option>
+            <option value="CONFIRMED">Confirmée</option>
+            <option value="IN_PREP">En préparation</option>
+            <option value="READY">Prête</option>
+            <option value="DISTRIBUTED">Retirée</option>
+            <option value="CANCELLED">Annulée</option>
           </select>
         </div>
 
@@ -46,19 +46,19 @@
 
       <div class="filter-row">
         <div class="filter-group">
-          <label>Date debut</label>
+          <label>Date de début</label>
           <input v-model="filterDateDebut" type="date" class="filter-input" />
         </div>
 
         <div class="filter-group">
-          <label>Date fin</label>
+          <label>Date de fin</label>
           <input v-model="filterDateFin" type="date" class="filter-input" />
         </div>
 
         <div class="filter-group">
           <label>Actions</label>
           <div class="archives-filter-actions">
-            <button class="btn btn-secondary" @click="resetFilters">Reinitialiser</button>
+            <button class="btn btn-secondary" @click="resetFilters">Réinitialiser</button>
             <button class="btn btn-primary" :disabled="commandesFiltrees.length === 0" @click="exporterCSV">
               Exporter CSV
             </button>
@@ -71,7 +71,7 @@
       <div v-if="commandesFiltrees.length === 0" class="empty-state">
         <div class="empty-icon">0</div>
         <h3>Aucune commande</h3>
-        <p>Aucune commande ne correspond a vos filtres.</p>
+        <p>Aucune commande ne correspond à vos filtres.</p>
       </div>
 
       <table v-else class="data-table">
@@ -103,14 +103,14 @@
             <td><strong>{{ getMontant(commande).toFixed(2) }} EUR</strong></td>
             <td>
               <button class="btn-icon btn-primary" @click="commandeSelectionnee = commande">
-                Details
+                Détails
               </button>
             </td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="5" class="table-total-label">Total affiche</td>
+            <td colspan="5" class="table-total-label">Total affiché</td>
             <td><strong>{{ montantTotalFiltre.toFixed(2) }} EUR</strong></td>
             <td></td>
           </tr>
@@ -127,7 +127,7 @@
 
         <div class="modal-body commande-detail">
           <div class="detail-section">
-            <h3>Informations generales</h3>
+            <h3>Informations générales</h3>
             <p><strong>Statut :</strong> {{ getStatutBadge(commandeSelectionnee.statut).label }}</p>
             <p><strong>Date commande :</strong> {{ formatDateTime(commandeSelectionnee.dateCommande || commandeSelectionnee.date) }}</p>
           </div>
@@ -137,7 +137,7 @@
             <p><strong>Point :</strong> {{ commandeSelectionnee.pointCollecte?.nom || 'N/A' }}</p>
             <p><strong>Adresse :</strong> {{ commandeSelectionnee.pointCollecte?.adresse || 'N/A' }}</p>
             <p><strong>Date :</strong> {{ formatDate(commandeSelectionnee.dateRetrait) }}</p>
-            <p><strong>Creneau :</strong> {{ commandeSelectionnee.creneauRetrait?.horaire || 'N/A' }}</p>
+            <p><strong>Créneau :</strong> {{ commandeSelectionnee.creneauRetrait?.horaire || 'N/A' }}</p>
           </div>
 
           <div class="detail-section">
@@ -257,11 +257,11 @@ function getMontant(commande) {
 
 function getStatutBadge(statut) {
   const map = {
-    CONFIRMED: { label: 'Confirmee', class: 'success' },
-    IN_PREP: { label: 'En preparation', class: 'warning' },
-    READY: { label: 'Prete', class: 'info' },
-    DISTRIBUTED: { label: 'Distribuee', class: 'success' },
-    CANCELLED: { label: 'Annulee', class: 'danger' }
+    CONFIRMED: { label: 'Confirmée', class: 'success' },
+    IN_PREP: { label: 'En préparation', class: 'warning' },
+    READY: { label: 'Prête', class: 'info' },
+    DISTRIBUTED: { label: 'Retirée', class: 'success' },
+    CANCELLED: { label: 'Annulée', class: 'danger' }
   }
   return map[statut] || { label: statut || 'Inconnu', class: 'secondary' }
 }
@@ -295,7 +295,7 @@ function exporterCSV() {
 
   addCsvSection(rows, 'Terra Sana - Mes archives de commandes')
   addCsvKeyValues(rows, [
-    ['Genere le', formatCsvDateTime(new Date())],
+    ['Généré le', formatCsvDateTime(new Date())],
     ['Commandes exportees', commandesFiltrees.value.length],
     ['Montant total TTC (EUR)', formatCsvMoney(montantTotalFiltre.value)]
   ])
@@ -305,17 +305,17 @@ function exporterCSV() {
     ['Recherche', searchQuery.value.trim() || 'Toutes'],
     ['Statut', getStatutFilterLabel()],
     ['Point de collecte', filterPoint.value || 'Tous les points'],
-    ['Date debut', filterDateDebut.value ? formatCsvDate(filterDateDebut.value) : 'Non limitee'],
-    ['Date fin', filterDateFin.value ? formatCsvDate(filterDateFin.value) : 'Non limitee']
+    ['Date de début', filterDateDebut.value ? formatCsvDate(filterDateDebut.value) : 'Non limitée'],
+    ['Date de fin', filterDateFin.value ? formatCsvDate(filterDateFin.value) : 'Non limitée']
   ])
 
   addCsvSection(rows, 'Commandes')
   rows.push([
-    'No commande',
+    'N° commande',
     'Date commande',
     'Point de collecte',
     'Date retrait',
-    'Creneau',
+    'Créneau',
     'Statut',
     'Code retrait',
     'Total TTC (EUR)'
@@ -334,10 +334,10 @@ function exporterCSV() {
     ])
   }
 
-  rows.push(['', '', '', '', '', 'Total affiche', '', formatCsvMoney(montantTotalFiltre.value)])
+  rows.push(['', '', '', '', '', 'Total affiché', '', formatCsvMoney(montantTotalFiltre.value)])
 
-  addCsvSection(rows, 'Details des produits')
-  rows.push(['No commande', 'Produit', 'Quantite', 'Unite', 'Total ligne TTC (EUR)'])
+  addCsvSection(rows, 'Détails des produits')
+  rows.push(['N° commande', 'Produit', 'Quantité', 'Unité', 'Total ligne TTC (EUR)'])
 
   for (const commande of commandesFiltrees.value) {
     for (const produit of commande.produits || []) {
@@ -364,7 +364,7 @@ function getCreneauLabel(commande) {
 }
 
 function getStatutFilterLabel() {
-  if (filterStatut.value === 'terminees') return 'Commandes cloturees'
+  if (filterStatut.value === 'terminees') return 'Commandes clôturées'
   if (filterStatut.value === 'tous') return 'Tous les statuts'
   return getStatutBadge(filterStatut.value).label
 }

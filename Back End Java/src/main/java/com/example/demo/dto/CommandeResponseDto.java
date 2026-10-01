@@ -32,6 +32,8 @@ public class CommandeResponseDto {
     private LocalDateTime dateRetrait;
     private LocalDateTime dateAnnulation;
     private String commentaire;
+    private boolean incidentPreparation;
+    private String motifIncidentPreparation;
     private CommandeMembreResumeDto membre;
     private CommandePointCollecteResumeDto pointCollecte;
     private CommandeCreneauResumeDto creneauRetrait;

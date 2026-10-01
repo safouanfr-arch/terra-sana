@@ -14,11 +14,17 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.DemandeAdhesionCreateDto;
+import com.example.demo.dto.DemandeAdhesionConfirmationRequestDto;
+import com.example.demo.dto.DemandeAdhesionConfirmationResponseDto;
 import com.example.demo.dto.DemandeAdhesionDecisionDto;
 import com.example.demo.dto.DemandeAdhesionDto;
+import com.example.demo.dto.DemandeAdhesionResendRequestDto;
+import com.example.demo.dto.DemandeAdhesionResendResponseDto;
 import com.example.demo.security.AppUserPrincipal;
 import com.example.demo.service.DemandeAdhesionService;
+import com.example.demo.service.PublicAdhesionRateLimitService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,11 +34,32 @@ import lombok.RequiredArgsConstructor;
 public class DemandeAdhesionController {
 
     private final DemandeAdhesionService demandeAdhesionService;
+    private final PublicAdhesionRateLimitService publicAdhesionRateLimitService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public DemandeAdhesionDto create(@Valid @RequestBody DemandeAdhesionCreateDto dto) {
+    public DemandeAdhesionDto create(
+            @Valid @RequestBody DemandeAdhesionCreateDto dto,
+            HttpServletRequest request
+    ) {
+        publicAdhesionRateLimitService.check(request.getRemoteAddr(), dto.getEmail());
         return demandeAdhesionService.create(dto);
+    }
+
+    @PostMapping("/confirmation")
+    public DemandeAdhesionConfirmationResponseDto confirmEmail(
+            @Valid @RequestBody DemandeAdhesionConfirmationRequestDto dto
+    ) {
+        return demandeAdhesionService.confirmEmail(dto.getToken());
+    }
+
+    @PostMapping("/confirmation/renvoyer")
+    public DemandeAdhesionResendResponseDto resendConfirmation(
+            @Valid @RequestBody DemandeAdhesionResendRequestDto dto,
+            HttpServletRequest request
+    ) {
+        publicAdhesionRateLimitService.check(request.getRemoteAddr(), dto.getEmail());
+        return demandeAdhesionService.resendConfirmation(dto.getEmail());
     }
 
     @GetMapping

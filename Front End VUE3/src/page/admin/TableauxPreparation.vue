@@ -2,17 +2,14 @@
   <div class="admin-page preparation-page">
     <div class="admin-page-header">
       <div>
-        <router-link to="/admin" class="back-link"><- Retour au dashboard</router-link>
-        <h1>Tableaux de preparation</h1>
-        <p>Suivez les commandes a preparer depuis les donnees reelles du backend.</p>
+        <router-link to="/admin" class="back-link">← Retour au tableau de bord</router-link>
+        <h1>Tableaux de préparation</h1>
+        <p>Suivez les commandes à préparer à partir des données enregistrées.</p>
       </div>
 
       <div class="header-actions">
         <button class="btn btn-secondary" :disabled="commandesFiltrees.length === 0" @click="exporterCSV">
-          Export CSV
-        </button>
-        <button class="btn btn-primary" :disabled="commandesFiltrees.length === 0" @click="imprimer">
-          Imprimer
+          Exporter les données CSV
         </button>
       </div>
     </div>
@@ -41,9 +38,9 @@
         </div>
 
         <div class="form-group">
-          <label for="filter-creneau">Creneau</label>
+          <label for="filter-creneau">Créneau</label>
           <select id="filter-creneau" v-model="filterCreneau">
-            <option value="">Tous les creneaux</option>
+            <option value="">Tous les créneaux</option>
             <option v-for="creneau in creneauxUniques" :key="creneau" :value="creneau">{{ creneau }}</option>
           </select>
         </div>
@@ -51,12 +48,12 @@
         <div class="form-group">
           <label for="filter-statut">Statut</label>
           <select id="filter-statut" v-model="filterStatut">
-            <option value="ACTIVES">Actives a preparer</option>
-            <option value="CONFIRMED">Confirmees</option>
-            <option value="IN_PREP">En preparation</option>
-            <option value="READY">Pretes</option>
-            <option value="DISTRIBUTED">Distribuees</option>
-            <option value="CANCELLED">Annulees</option>
+            <option value="ACTIVES">Actives à préparer</option>
+            <option value="CONFIRMED">Confirmées</option>
+            <option value="IN_PREP">En préparation</option>
+            <option value="READY">Prêtes</option>
+            <option value="DISTRIBUTED">Retirées</option>
+            <option value="CANCELLED">Annulées</option>
           </select>
         </div>
       </div>
@@ -68,11 +65,11 @@
         <strong class="stat-value">{{ commandesFiltrees.length }}</strong>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Lignes a preparer</span>
+        <span class="stat-label">Lignes à préparer</span>
         <strong class="stat-value">{{ totalLignes }}</strong>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Unites totales</span>
+        <span class="stat-label">Unités totales</span>
         <strong class="stat-value">{{ totalUnites }}</strong>
       </div>
       <div class="stat-card warning">
@@ -83,23 +80,69 @@
 
     <div v-if="loading" class="empty-state">
       <h3>Chargement des commandes</h3>
-      <p>Le tableau de preparation se synchronise avec le backend.</p>
+      <p>Le tableau de préparation se synchronise avec les commandes.</p>
     </div>
 
     <div v-else-if="commandesFiltrees.length === 0" class="empty-state">
-      <h3>Aucune commande pour cette selection</h3>
+      <h3>Aucune commande pour cette sélection</h3>
       <p>Essayez un autre point, une autre date ou un autre statut.</p>
     </div>
 
-    <div v-else class="preparation-layout">
-      <section class="orders-panel">
-        <div class="panel-header">
-          <h2>Commandes</h2>
-          <span>{{ commandesFiltrees.length }} resultat(s)</span>
+    <div v-else class="preparation-groups">
+      <section v-for="groupe in groupesPreparation" :key="groupe.creneauId" class="preparation-group">
+        <div class="group-header">
+          <div>
+            <span class="group-kicker">Point de collecte</span>
+            <h2>{{ groupe.pointNom }}</h2>
+            <p>{{ formatDateLabel(groupe.date) }} - {{ groupe.creneauLabel }}</p>
+          </div>
+          <div class="group-actions">
+            <div class="group-counts">
+              <strong>{{ groupe.commandes.length }} commande(s)</strong>
+              <span>{{ groupe.sansIncident }} sans incident</span>
+              <span v-if="groupe.avecIncident > 0" class="incident-count">
+                {{ groupe.avecIncident }} avec incident
+              </span>
+            </div>
+            <div class="preparation-email-action">
+              <span>Dossier préparation :</span>
+              <strong :class="emailStatusClass(groupe)">{{ emailStatusLabel(groupe) }}</strong>
+              <button
+                class="btn btn-secondary btn-small"
+                :disabled="!canSendPreparationEmail(groupe) || emailingGroupId === groupe.creneauId"
+                @click="envoyerDossierEmail(groupe)"
+              >
+                {{ emailingGroupId === groupe.creneauId ? 'Envoi...' : emailActionLabel(groupe) }}
+              </button>
+            </div>
+            <button
+              class="btn btn-secondary"
+              :disabled="groupe.commandesPdf === 0 || downloadingGroupId === groupe.creneauId"
+              :title="groupe.commandesPdf === 0 ? 'Aucune commande en préparation ou prête' : ''"
+              @click="telechargerPdf(groupe)"
+            >
+              {{ downloadingGroupId === groupe.creneauId ? 'Génération...' : 'Télécharger le dossier PDF' }}
+            </button>
+            <button
+              v-if="groupe.commandesEligibles > 0"
+              class="btn btn-primary"
+              :disabled="finalizingGroupId === groupe.creneauId"
+              @click="finaliserGroupe(groupe)"
+            >
+              {{ finalizingGroupId === groupe.creneauId ? 'Finalisation...' : 'Finaliser la préparation' }}
+            </button>
+          </div>
         </div>
 
-        <div class="orders-list">
-          <article v-for="commande in commandesFiltrees" :key="commande.id" class="order-card">
+        <div class="group-content">
+          <div class="orders-panel">
+            <div class="panel-header">
+              <h3>Commandes</h3>
+              <span>{{ groupe.commandes.length }} résultat(s)</span>
+            </div>
+
+            <div class="orders-list">
+              <article v-for="commande in groupe.commandes" :key="commande.id" class="order-card">
             <div class="order-top">
               <div>
                 <h3>{{ commande.numero }}</h3>
@@ -117,11 +160,16 @@
               <span>{{ formatCurrency(getMontant(commande)) }}</span>
             </div>
 
+            <div v-if="commande.incidentPreparation" class="preparation-incident">
+              <strong>Incident de préparation</strong>
+              <span>{{ commande.motifIncidentPreparation }}</span>
+            </div>
+
             <div class="order-lines">
               <div class="order-lines-header">
                 <span>Produit</span>
-                <span>Quantite</span>
-                <span>Unite</span>
+                <span>Quantité</span>
+                <span>Unité</span>
               </div>
               <div v-for="produit in commande.produits" :key="produit.ligneId || `${commande.id}-${produit.produitId}`" class="order-line">
                 <span>{{ produit.nom }}</span>
@@ -130,56 +178,49 @@
               </div>
             </div>
 
-            <div class="order-actions">
-              <button
-                v-if="commande.statut === 'CONFIRMED'"
-                class="btn btn-secondary btn-small"
-                :disabled="updatingId === commande.id"
-                @click="changerStatut(commande, 'IN_PREP')"
-              >
-                Passer en preparation
-              </button>
-              <button
-                v-else-if="commande.statut === 'IN_PREP'"
-                class="btn btn-secondary btn-small"
-                :disabled="updatingId === commande.id"
-                @click="changerStatut(commande, 'READY')"
-              >
-                Marquer prete
-              </button>
-              <button
-                v-else-if="commande.statut === 'READY'"
-                class="btn btn-primary btn-small"
-                :disabled="updatingId === commande.id"
-                @click="changerStatut(commande, 'DISTRIBUTED')"
-              >
-                Marquer distribuee
-              </button>
-              <span v-else class="action-note">Aucune action supplementaire</span>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <aside class="summary-panel">
-        <div class="panel-header">
-          <h2>Pick-list</h2>
-          <span>{{ pickList.length }} produit(s)</span>
-        </div>
-
-        <div class="pick-list">
-          <div v-for="item in pickList" :key="item.key" class="pick-item">
-            <div>
-              <strong>{{ item.nom }}</strong>
-              <p>{{ item.commandes }} commande(s)</p>
-            </div>
-            <div class="pick-qty">
-              <span>{{ formatQuantite(item.quantiteTotale) }}</span>
-              <small>{{ item.unite }}</small>
+                <div class="order-actions">
+                  <button
+                    v-if="commande.statut === 'IN_PREP' && !commande.incidentPreparation"
+                    class="btn btn-secondary btn-small"
+                    :disabled="updatingId === commande.id"
+                    @click="signalerIncident(commande)"
+                  >
+                    Signaler un incident
+                  </button>
+                  <button
+                    v-if="commande.incidentPreparation"
+                    class="btn btn-secondary btn-small"
+                    :disabled="updatingId === commande.id"
+                    @click="resoudreIncident(commande)"
+                  >
+                    Résoudre l'incident
+                  </button>
+                </div>
+              </article>
             </div>
           </div>
+
+          <aside class="summary-panel">
+            <div class="panel-header">
+              <h3>Pick-list du créneau</h3>
+              <span>{{ groupe.pickList.length }} produit(s)</span>
+            </div>
+
+            <div class="pick-list">
+              <div v-for="item in groupe.pickList" :key="item.key" class="pick-item">
+                <div>
+                  <strong>{{ item.nom }}</strong>
+                  <p>{{ item.commandes }} commande(s)</p>
+                </div>
+                <div class="pick-qty">
+                  <span>{{ formatQuantite(item.quantiteTotale) }}</span>
+                  <small>{{ item.unite }}</small>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
-      </aside>
+      </section>
     </div>
   </div>
 </template>
@@ -207,7 +248,11 @@ const loading = ref(false)
 const apiError = ref('')
 const successMessage = ref('')
 const updatingId = ref(null)
+const finalizingGroupId = ref(null)
+const downloadingGroupId = ref(null)
+const emailingGroupId = ref(null)
 const commandes = ref([])
+const preparationEmailStatuses = ref({})
 
 const filterPoint = ref('')
 const filterDate = ref('')
@@ -224,10 +269,28 @@ async function loadCommandes() {
 
   try {
     commandes.value = await commandesApi.listAdmin()
+    await loadPreparationEmailStatuses()
   } catch (error) {
     handleApiError(error)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadPreparationEmailStatuses() {
+  const creneauIds = [...new Set(
+    commandes.value
+      .map(commande => commande.creneauRetrait?.id)
+      .filter(Boolean)
+  )]
+  try {
+    const entries = await Promise.all(creneauIds.map(async creneauId => [
+      creneauId,
+      await commandesApi.getPreparationEmailStatus(creneauId)
+    ]))
+    preparationEmailStatuses.value = Object.fromEntries(entries)
+  } catch (error) {
+    handleApiError(error)
   }
 }
 
@@ -276,10 +339,10 @@ const commandesFiltrees = computed(() => {
     })
 })
 
-const pickList = computed(() => {
+function buildPickList(commandesDuGroupe) {
   const map = new Map()
 
-  for (const commande of commandesFiltrees.value) {
+  for (const commande of commandesDuGroupe) {
     for (const produit of commande.produits || []) {
       const key = produit.produitId || produit.id || produit.nom
       if (!map.has(key)) {
@@ -288,35 +351,198 @@ const pickList = computed(() => {
           nom: produit.nom,
           unite: produit.unite || 'piece',
           quantiteTotale: 0,
-          commandes: 0
+          commandeIds: new Set()
         })
       }
 
       const item = map.get(key)
       item.quantiteTotale += Number(produit.quantite || 0)
-      item.commandes += 1
+      item.commandeIds.add(commande.id)
     }
   }
 
-  return [...map.values()].sort((left, right) => left.nom.localeCompare(right.nom))
+  return [...map.values()]
+    .map(item => ({
+      key: item.key,
+      nom: item.nom,
+      unite: item.unite,
+      quantiteTotale: item.quantiteTotale,
+      commandes: item.commandeIds.size
+    }))
+    .sort((left, right) => left.nom.localeCompare(right.nom))
+}
+
+const groupesPreparation = computed(() => {
+  const groupes = new Map()
+
+  for (const commande of commandesFiltrees.value) {
+    const creneauId = commande.creneauRetrait?.id
+    if (!creneauId) continue
+
+    if (!groupes.has(creneauId)) {
+      groupes.set(creneauId, {
+        creneauId,
+        pointNom: getPointNom(commande),
+        date: commande.creneauRetrait?.date || getDateKey(commande),
+        creneauLabel: getCreneauLabel(commande),
+        commandes: []
+      })
+    }
+    groupes.get(creneauId).commandes.push(commande)
+  }
+
+  return [...groupes.values()]
+    .map(groupe => ({
+      ...groupe,
+      pickList: buildPickList(groupe.commandes),
+      avecIncident: groupe.commandes.filter(commande => commande.incidentPreparation).length,
+      sansIncident: groupe.commandes.filter(commande => !commande.incidentPreparation).length,
+      commandesPdf: groupe.commandes.filter(
+        commande => ['IN_PREP', 'READY'].includes(commande.statut)
+      ).length,
+      commandesEligibles: groupe.commandes.filter(
+        commande => commande.statut === 'IN_PREP' && !commande.incidentPreparation
+      ).length
+    }))
+    .sort((left, right) => {
+      const dateComparison = String(left.date).localeCompare(String(right.date))
+      if (dateComparison !== 0) return dateComparison
+      return left.creneauLabel.localeCompare(right.creneauLabel)
+    })
 })
 
 const totalLignes = computed(() => commandesFiltrees.value.reduce((sum, commande) => sum + (commande.produits?.length || 0), 0))
-const totalUnites = computed(() => pickList.value.reduce((sum, item) => sum + item.quantiteTotale, 0))
+const totalUnites = computed(() => groupesPreparation.value.reduce(
+  (sum, groupe) => sum + groupe.pickList.reduce((groupSum, item) => groupSum + item.quantiteTotale, 0),
+  0
+))
 const totalMontant = computed(() => commandesFiltrees.value.reduce((sum, commande) => sum + getMontant(commande), 0))
 
-async function changerStatut(commande, statut) {
-  updatingId.value = commande.id
+async function finaliserGroupe(groupe) {
+  if (!window.confirm(`Finaliser la préparation de ${groupe.commandesEligibles} commande(s) pour ce créneau ?`)) {
+    return
+  }
+
+  finalizingGroupId.value = groupe.creneauId
   apiError.value = ''
   successMessage.value = ''
 
   try {
-    const updatedCommande = await commandesApi.updateStatus(commande.id, statut)
-    const index = commandes.value.findIndex(item => item.id === updatedCommande.id)
-    if (index !== -1) {
-      commandes.value[index] = updatedCommande
+    const result = await commandesApi.finalizePreparationGroup(groupe.creneauId)
+    await loadCommandes()
+    successMessage.value = `${result.commandesFinalisees} commande(s) marquée(s) comme prête(s), `
+      + `${result.commandesExcluesIncident} exclue(s) pour incident.`
+  } catch (error) {
+    handleApiError(error)
+  } finally {
+    finalizingGroupId.value = null
+  }
+}
+
+async function telechargerPdf(groupe) {
+  downloadingGroupId.value = groupe.creneauId
+  apiError.value = ''
+  successMessage.value = ''
+
+  try {
+    const { blob, fileName } = await commandesApi.downloadPreparationPdf(groupe.creneauId)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    successMessage.value = `Le dossier PDF du créneau ${groupe.creneauLabel} a été généré.`
+  } catch (error) {
+    handleApiError(error)
+  } finally {
+    downloadingGroupId.value = null
+  }
+}
+
+async function envoyerDossierEmail(groupe) {
+  const action = emailActionLabel(groupe)
+  if (!window.confirm(`${action} pour le créneau ${groupe.creneauLabel} ?`)) {
+    return
+  }
+
+  emailingGroupId.value = groupe.creneauId
+  apiError.value = ''
+  successMessage.value = ''
+  try {
+    const status = await commandesApi.sendPreparationEmail(groupe.creneauId)
+    preparationEmailStatuses.value = {
+      ...preparationEmailStatuses.value,
+      [groupe.creneauId]: status
     }
-    successMessage.value = `Commande ${updatedCommande.numero} mise a jour.`
+    successMessage.value = status.statutEnvoi === 'SENT'
+      ? `Le dossier du créneau ${groupe.creneauLabel} a été envoyé.`
+      : `La tentative d'envoi du dossier ${groupe.creneauLabel} a échoué.`
+  } catch (error) {
+    handleApiError(error)
+  } finally {
+    emailingGroupId.value = null
+  }
+}
+
+function getPreparationEmailStatus(groupe) {
+  return preparationEmailStatuses.value[groupe.creneauId] || null
+}
+
+function emailStatusLabel(groupe) {
+  const status = getPreparationEmailStatus(groupe)
+  if (status && status.envoiConfigure === false) return 'Envoi non configuré'
+  return {
+    PENDING: 'Envoi en cours',
+    SENT: 'Envoyé',
+    FAILED: 'Échec'
+  }[status?.statutEnvoi] || 'Non envoyé'
+}
+
+function emailActionLabel(groupe) {
+  const statut = getPreparationEmailStatus(groupe)?.statutEnvoi
+  if (statut === 'SENT') return 'Renvoyer'
+  if (statut === 'FAILED') return "Réessayer l'envoi"
+  return 'Envoyer'
+}
+
+function emailStatusClass(groupe) {
+  const statut = getPreparationEmailStatus(groupe)?.statutEnvoi
+  return {
+    PENDING: 'email-status-pending',
+    SENT: 'email-status-sent',
+    FAILED: 'email-status-failed'
+  }[statut] || 'email-status-none'
+}
+
+function canSendPreparationEmail(groupe) {
+  const status = getPreparationEmailStatus(groupe)
+  return groupe.commandesPdf > 0
+    && status?.envoiConfigure !== false
+    && status?.statutEnvoi !== 'PENDING'
+}
+
+async function signalerIncident(commande) {
+  const motif = window.prompt("Motif de l'incident de préparation :")
+  if (motif === null) return
+  if (!motif.trim()) {
+    apiError.value = "Le motif de l'incident est obligatoire."
+    return
+  }
+  if (motif.trim().length > 500) {
+    apiError.value = "Le motif de l'incident ne peut pas dépasser 500 caractères."
+    return
+  }
+
+  updatingId.value = commande.id
+  apiError.value = ''
+  successMessage.value = ''
+  try {
+    const updatedCommande = await commandesApi.reportPreparationIncident(commande.id, motif.trim())
+    replaceCommande(updatedCommande)
+    successMessage.value = `Incident signalé pour la commande ${updatedCommande.numero}.`
   } catch (error) {
     handleApiError(error)
   } finally {
@@ -324,39 +550,70 @@ async function changerStatut(commande, statut) {
   }
 }
 
+async function resoudreIncident(commande) {
+  if (!window.confirm(`Résoudre l'incident de la commande ${commande.numero} ?`)) return
+
+  updatingId.value = commande.id
+  apiError.value = ''
+  successMessage.value = ''
+  try {
+    const updatedCommande = await commandesApi.resolvePreparationIncident(commande.id)
+    replaceCommande(updatedCommande)
+    successMessage.value = `Incident résolu pour la commande ${updatedCommande.numero}.`
+  } catch (error) {
+    handleApiError(error)
+  } finally {
+    updatingId.value = null
+  }
+}
+
+function replaceCommande(updatedCommande) {
+  const index = commandes.value.findIndex(item => item.id === updatedCommande.id)
+  if (index !== -1) {
+    commandes.value[index] = updatedCommande
+  }
+}
+
 function exporterCSV() {
   const rows = []
 
-  addCsvSection(rows, 'Terra Sana - Tableau de preparation')
+  addCsvSection(rows, 'Terra Sana - Tableau de préparation')
   addCsvKeyValues(rows, [
-    ['Genere le', formatCsvDateTime(new Date())],
-    ['Commandes exportees', commandesFiltrees.value.length],
-    ['Lignes a preparer', totalLignes.value],
-    ['Unites totales', formatCsvQuantity(totalUnites.value)],
+    ['Généré le', formatCsvDateTime(new Date())],
+    ['Commandes exportées', commandesFiltrees.value.length],
+    ['Lignes à préparer', totalLignes.value],
+    ['Unités totales', formatCsvQuantity(totalUnites.value)],
     ['Montant total TTC (EUR)', formatCsvMoney(totalMontant.value)]
   ])
 
-  addCsvSection(rows, 'Filtres appliques')
+  addCsvSection(rows, 'Filtres appliqués')
   addCsvKeyValues(rows, [
     ['Point de collecte', filterPoint.value || 'Tous les points'],
     ['Date de retrait', filterDate.value ? formatCsvDate(filterDate.value) : 'Toutes les dates'],
-    ['Creneau', filterCreneau.value || 'Tous les creneaux'],
+    ['Créneau', filterCreneau.value || 'Tous les créneaux'],
     ['Statut', getStatutFilterLabel()]
   ])
 
-  addCsvSection(rows, 'Pick-list globale')
-  rows.push(['A cocher', 'Produit', 'Quantite totale', 'Unite', 'Commandes concernees'])
-  for (const item of pickList.value) {
-    rows.push(['[ ]', item.nom, formatCsvQuantity(item.quantiteTotale), item.unite, item.commandes])
+  for (const groupe of groupesPreparation.value) {
+    addCsvSection(rows, `Pick-list - ${groupe.pointNom} - ${formatCsvDate(groupe.date)} - ${groupe.creneauLabel}`)
+    addCsvKeyValues(rows, [
+      ['Commandes', groupe.commandes.length],
+      ['Sans incident', groupe.sansIncident],
+      ['Avec incident', groupe.avecIncident]
+    ])
+    rows.push(['À cocher', 'Produit', 'Quantité totale', 'Unité', 'Commandes concernées'])
+    for (const item of groupe.pickList) {
+      rows.push(['[ ]', item.nom, formatCsvQuantity(item.quantiteTotale), item.unite, item.commandes])
+    }
   }
 
-  addCsvSection(rows, 'Commandes concernees')
+  addCsvSection(rows, 'Commandes concernées')
   rows.push([
-    'No commande',
+    'N° commande',
     'Membre',
     'Point de collecte',
     'Date retrait',
-    'Creneau',
+    'Créneau',
     'Statut',
     'Nb lignes',
     'Montant TTC (EUR)',
@@ -379,17 +636,17 @@ function exporterCSV() {
     ])
   }
 
-  addCsvSection(rows, 'Details a preparer par commande')
+  addCsvSection(rows, 'Détails à préparer par commande')
   rows.push([
-    'A cocher',
-    'No commande',
+    'À cocher',
+    'N° commande',
     'Membre',
     'Produit',
-    'Quantite',
-    'Unite',
+    'Quantité',
+    'Unité',
     'Point de collecte',
     'Date retrait',
-    'Creneau'
+    'Créneau'
   ])
 
   for (const commande of commandesFiltrees.value) {
@@ -409,10 +666,6 @@ function exporterCSV() {
   }
 
   downloadCsv(`terra-sana-tableau-preparation-${exportDateStamp()}.csv`, rows)
-}
-
-function imprimer() {
-  window.print()
 }
 
 function getMembreNom(membre) {
@@ -478,17 +731,17 @@ function formatQuantite(value) {
 
 function statusLabel(statut) {
   const map = {
-    CONFIRMED: 'Confirmee',
-    IN_PREP: 'En preparation',
-    READY: 'Prete',
-    DISTRIBUTED: 'Distribuee',
-    CANCELLED: 'Annulee'
+    CONFIRMED: 'Confirmée',
+    IN_PREP: 'En préparation',
+    READY: 'Prête',
+    DISTRIBUTED: 'Retirée',
+    CANCELLED: 'Annulée'
   }
   return map[statut] || statut
 }
 
 function getStatutFilterLabel() {
-  if (filterStatut.value === 'ACTIVES') return 'Actives a preparer'
+  if (filterStatut.value === 'ACTIVES') return 'Actives à préparer'
   return statusLabel(filterStatut.value)
 }
 
@@ -589,7 +842,91 @@ function statusClass(statut) {
   margin-bottom: 0.5rem;
 }
 
-.preparation-layout {
+.preparation-groups {
+  display: grid;
+  gap: 2rem;
+}
+
+.preparation-group {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid rgba(47, 93, 80, 0.22);
+}
+
+.group-header,
+.group-actions,
+.group-counts {
+  display: flex;
+  gap: 1rem;
+}
+
+.preparation-email-action {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 150px;
+  font-size: 0.82rem;
+}
+
+.preparation-email-action > span {
+  color: #64748b;
+}
+
+.email-status-none,
+.email-status-pending {
+  color: #475569;
+}
+
+.email-status-sent {
+  color: #28725f;
+}
+
+.email-status-failed {
+  color: #b42318;
+}
+
+.group-header {
+  justify-content: space-between;
+  align-items: end;
+}
+
+.group-header h2 {
+  margin: 0.15rem 0 0.25rem;
+  font-size: 1.35rem;
+}
+
+.group-header p {
+  margin: 0;
+  color: #475569;
+}
+
+.group-kicker {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.group-actions {
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.group-counts {
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: right;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.incident-count {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.group-content {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.9fr);
   gap: 1.5rem;
@@ -605,7 +942,8 @@ function statusClass(statut) {
   gap: 1rem;
 }
 
-.panel-header h2 {
+.panel-header h2,
+.panel-header h3 {
   margin: 0;
   font-size: 1.05rem;
 }
@@ -717,6 +1055,18 @@ function statusClass(statut) {
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 0.6rem;
+}
+
+.preparation-incident {
+  display: grid;
+  gap: 0.2rem;
+  margin-bottom: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  border-left: 3px solid #b45309;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 0.88rem;
 }
 
 .btn-small {
@@ -765,7 +1115,7 @@ function statusClass(statut) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .preparation-layout {
+  .group-content {
     grid-template-columns: 1fr;
   }
 }
@@ -785,9 +1135,15 @@ function statusClass(statut) {
   }
 
   .order-top,
-  .order-actions {
+  .order-actions,
+  .group-header,
+  .group-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .group-counts {
+    text-align: left;
   }
 
   .order-lines-header,
