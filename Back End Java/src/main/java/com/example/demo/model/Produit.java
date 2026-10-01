@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.TagAlimentaire;
 import com.example.demo.model.enums.UniteProduit;
 
@@ -74,7 +77,8 @@ public class Produit {
     private BigDecimal prixUnitaire;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "unite", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "unite", length = 50, nullable = false)
     private UniteProduit unite;
 
     @Builder.Default
@@ -97,6 +101,7 @@ public class Produit {
     @ElementCollection(targetClass = TagAlimentaire.class)
     @CollectionTable(name = "TPRODUIT_TAGS", joinColumns = @JoinColumn(name = "FKproduit"))
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "tag", nullable = false, length = 50)
     private Set<TagAlimentaire> tagsAlimentaires = new HashSet<>();
 

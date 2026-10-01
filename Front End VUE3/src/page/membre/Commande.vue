@@ -52,14 +52,14 @@
           <h2>Choisissez votre créneau de retrait</h2>
           <p class="help-text">Les créneaux affichés sont actifs, prévus au moins 24 heures à l'avance et limités à J+8.</p>
           <div class="creneaux-grid">
-            <div v-for="date in availableDatesWithCreneaux" :key="date.toISOString()" class="date-group">
+            <div v-for="date in availableDatesWithCreneaux" :key="toLocalDateKey(date)" class="date-group">
               <h3 class="date-titre">{{ formatDateLong(date) }}</h3>
               <div class="creneaux-list">
                 <button
                   v-for="(creneau, index) in getCreneauxForDate(date)"
                   :key="index"
-                  :class="['creneau-btn', { selected: selectedDate === date.toISOString() && selectedCreneau?.horaire === creneau.horaire }]"
-                  @click="handleSelectCreneau(date.toISOString(), creneau)"
+                  :class="['creneau-btn', { selected: selectedDate === toLocalDateKey(date) && selectedCreneau?.horaire === creneau.horaire }]"
+                  @click="handleSelectCreneau(toLocalDateKey(date), creneau)"
                 >
                   <span class="creneau-horaire">{{ creneau.horaire }}</span>
                 </button>
@@ -77,7 +77,7 @@
               <div class="detail-card">
                 <p><strong>Point :</strong> {{ selectedPoint.nom }}</p>
                 <p><strong>Adresse :</strong> {{ selectedPoint.adresse }}</p>
-                <p><strong>Date :</strong> {{ formatDateLong(new Date(selectedDate)) }}</p>
+                <p><strong>Date :</strong> {{ formatDateLong(fromLocalDateKey(selectedDate)) }}</p>
                 <p><strong>Créneau :</strong> {{ selectedCreneau.horaire }}</p>
               </div>
               <button class="btn-text" @click="step = 2">Modifier</button>
@@ -138,7 +138,7 @@
           </div>
           <div v-if="selectedPoint" class="resume-info-box">
             <p><strong>{{ selectedPoint.nom }}</strong></p>
-            <p v-if="selectedDate && selectedCreneau">{{ formatDateShort(new Date(selectedDate)) }} à {{ selectedCreneau.horaire }}</p>
+            <p v-if="selectedDate && selectedCreneau">{{ formatDateShort(fromLocalDateKey(selectedDate)) }} à {{ selectedCreneau.horaire }}</p>
           </div>
         </div>
       </div>
@@ -164,6 +164,18 @@ function formatCreneaux(creneaux = []) {
     .map(creneau => creneau.horaire || `${creneau.debut || ''}-${creneau.fin || ''}`.trim())
     .filter(Boolean)
     .join(', ')
+}
+
+function toLocalDateKey(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function fromLocalDateKey(dateKey) {
+  const [year, month, day] = String(dateKey).split('-').map(Number)
+  return new Date(year, month - 1, day)
 }
 
 const router = useRouter()
@@ -241,12 +253,14 @@ const availableDatesWithCreneaux = computed(() => {
   return availableDates.value.filter(date => getCreneauxForDate(date).length > 0)
 })
 
-function isDateWithinNext7Days(isoDateStr) {
-  if (!isoDateStr) return false
-  const d = new Date(isoDateStr)
+function isDateWithinNext7Days(dateKey) {
+  if (!dateKey) return false
+  const d = fromLocalDateKey(dateKey)
+  if (Number.isNaN(d.getTime())) return false
   const today = new Date()
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-  const end = new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000)
+  const maximum = new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000)
+  const end = new Date(maximum.getFullYear(), maximum.getMonth(), maximum.getDate())
   return d >= start && d <= end
 }
 
@@ -269,7 +283,7 @@ function isCreneauEligible(creneau) {
   const minimum = new Date(now.getTime() + 24 * 60 * 60 * 1000)
   const end = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000)
 
-  return retrait >= minimum && retrait <= end
+  return retrait > minimum && retrait <= end
 }
 
 function prixEffectifHT(item) {
@@ -285,7 +299,7 @@ const handleSelectPoint = (point) => {
 
 const getCreneauxForDate = (date) => {
   if (!selectedPoint.value) return []
-  const targetDateStr = date.toISOString().slice(0, 10)
+  const targetDateStr = toLocalDateKey(date)
 
   return (selectedPoint.value.creneaux || [])
     .filter(c => c.date && c.date.slice(0, 10) === targetDateStr)

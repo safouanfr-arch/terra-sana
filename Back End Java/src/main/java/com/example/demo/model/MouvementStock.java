@@ -6,6 +6,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.TypeMouvementStock;
 
 @Entity
@@ -41,7 +44,8 @@ public class MouvementStock {
     // ---------------------------------------------------------
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type_mouvement", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "type_mouvement", length = 50, nullable = false)
     private TypeMouvementStock type;
 
     @Column(name = "quantite", precision = 10, scale = 2, nullable = false)

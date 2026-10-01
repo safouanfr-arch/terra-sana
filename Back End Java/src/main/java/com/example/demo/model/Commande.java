@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.StatutCommande;
 
 import jakarta.persistence.Column;
@@ -60,7 +63,8 @@ public class Commande {
     private String codeRetrait;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "statut", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "statut", length = 50, nullable = false)
     @Builder.Default
     private StatutCommande statut = StatutCommande.CONFIRMED;
 

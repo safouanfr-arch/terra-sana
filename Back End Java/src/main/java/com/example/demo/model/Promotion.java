@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import com.example.demo.model.enums.TypeReduction;
 
 @Entity
@@ -34,7 +37,8 @@ public class Promotion {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type_reduction", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "type_reduction", length = 50, nullable = false)
     private TypeReduction typeReduction;
 
     @Column(name = "valeur_reduction", precision = 10, scale = 2, nullable = false)

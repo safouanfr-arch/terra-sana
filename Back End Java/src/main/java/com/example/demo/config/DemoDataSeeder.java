@@ -133,8 +133,21 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "Depot Bruxelles Centre"
         );
 
-        CreneauCollecte creneau1 = seedCreneau(pointCollecte, LocalDate.now().plusDays(2), LocalTime.of(18, 0), LocalTime.of(20, 0));
-        CreneauCollecte creneau2 = seedCreneau(pointCollecte, LocalDate.now().plusDays(3), LocalTime.of(18, 30), LocalTime.of(20, 30));
+        LocalDateTime now = LocalDateTime.now();
+        CreneauCollecte creneau1 = seedCreneau(
+                pointCollecte,
+                now.toLocalDate().plusDays(2),
+                LocalTime.of(18, 0),
+                LocalTime.of(20, 0),
+                now
+        );
+        CreneauCollecte creneau2 = seedCreneau(
+                pointCollecte,
+                now.toLocalDate().plusDays(3),
+                LocalTime.of(18, 30),
+                LocalTime.of(20, 30),
+                now
+        );
 
         seedCommandesDemoIfMissing(membre, creneau1, creneau2, carottes, pommesTerre, pommes, jusPomme, oeufs);
 
@@ -246,17 +259,26 @@ public class DemoDataSeeder implements CommandLineRunner {
             PointCollecte pointCollecte,
             LocalDate date,
             LocalTime heureDebut,
-            LocalTime heureFin
+            LocalTime heureFin,
+            LocalDateTime now
     ) {
         List<CreneauCollecte> creneaux = creneauCollecteRepository.findByPointCollecte_Id(pointCollecte.getId());
 
         return creneaux.stream()
                 .filter(creneau -> Boolean.TRUE.equals(creneau.getActif()))
-                .filter(creneau -> LocalDateTime.of(creneau.getCreneau(), creneau.getHeureDebut()).isAfter(LocalDateTime.now()))
+                .filter(creneau -> isBeyondMinimumOrderLeadTime(creneau, now))
                 .filter(creneau -> Objects.equals(creneau.getHeureDebut(), heureDebut))
                 .filter(creneau -> Objects.equals(creneau.getHeureFin(), heureFin))
                 .min(Comparator.comparing(CreneauCollecte::getCreneau))
                 .orElseGet(() -> createFirstAvailableCreneau(pointCollecte, creneaux, date, heureDebut, heureFin));
+    }
+
+    static boolean isBeyondMinimumOrderLeadTime(CreneauCollecte creneau, LocalDateTime now) {
+        if (creneau == null || creneau.getCreneau() == null || creneau.getHeureDebut() == null || now == null) {
+            return false;
+        }
+        return LocalDateTime.of(creneau.getCreneau(), creneau.getHeureDebut())
+                .isAfter(now.plusHours(24));
     }
 
     private CreneauCollecte createFirstAvailableCreneau(
