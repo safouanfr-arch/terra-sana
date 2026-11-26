@@ -181,6 +181,48 @@ public class GeneratedEmailServiceTest {
     }
 
     @Test
+    void generateOrderReadyAlwaysIncludesUniqueWithdrawalCode() {
+        Commande commande = buildCommande();
+        EmailTemplateDto template = EmailTemplateDto.builder()
+                .type(EmailNotificationType.ORDER_READY.name())
+                .active(true)
+                .build();
+
+        when(emailSettingsService.getCompanyVariables()).thenReturn(Map.of());
+        when(emailTemplateService.renderTemplate(eq(EmailNotificationType.ORDER_READY), any(), eq(null)))
+                .thenReturn(new EmailTemplateService.RenderedEmail(
+                        template,
+                        "Votre commande CMD-1 est prête",
+                        "Votre commande CMD-1 est prête à être retirée."
+                ));
+        when(generatedEmailRepository.save(any(GeneratedEmail.class))).thenAnswer(invocation -> {
+            GeneratedEmail email = invocation.getArgument(0);
+            if (email.getId() == null) {
+                email.setId(14L);
+            }
+            return email;
+        });
+        when(emailSenderService.sendHtmlEmail(
+                eq("membre@terra.test"),
+                eq("Votre commande CMD-1 est prête"),
+                contains("ABC123")
+        )).thenReturn(EmailSendResult.sent(
+                LocalDateTime.of(2026, 5, 1, 10, 10),
+                LocalDateTime.of(2026, 5, 1, 10, 10, 1)
+        ));
+
+        GeneratedEmailDto dto = generatedEmailService.generateOrderReady(commande);
+
+        assertThat(dto.getContenuHtml())
+                .contains("Code unique de retrait", "ABC123");
+        verify(emailSenderService).sendHtmlEmail(
+                eq("membre@terra.test"),
+                eq("Votre commande CMD-1 est prête"),
+                contains("ABC123")
+        );
+    }
+
+    @Test
     void generateMembershipValidationRendersPasswordLinkAndSendsToCandidate() {
         DemandeAdhesion demande = DemandeAdhesion.builder()
                 .id(14L)

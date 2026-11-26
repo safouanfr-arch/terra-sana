@@ -46,22 +46,33 @@
       <div v-if="retraitCommande" class="withdrawal-result">
         <div class="withdrawal-summary">
           <div><span>Commande</span><strong>{{ retraitCommande.numeroCommande }}</strong></div>
+          <div><span>Code de retrait</span><strong>{{ retraitCommande.codeRetrait }}</strong></div>
           <div><span>Membre</span><strong>{{ getRetraitMembreNom(retraitCommande) }}</strong></div>
           <div><span>Point</span><strong>{{ retraitCommande.pointCollecte || 'N/A' }}</strong></div>
           <div>
-            <span>Créneau</span>
+            <span>Date et créneau de retrait</span>
             <strong>{{ formatDate(retraitCommande.dateRetrait) }} - {{ formatRetraitHoraire(retraitCommande) }}</strong>
           </div>
           <div><span>Montant</span><strong>{{ Number(retraitCommande.montantTotal || 0).toFixed(2) }} EUR</strong></div>
           <div><span>État</span><strong>{{ getStatutLabel(retraitCommande.statut) }}</strong></div>
+          <div><span>Paiement</span><strong>{{ retraitCommande.paye ? 'Payé' : 'En attente' }}</strong></div>
+          <div v-if="retraitCommande.datePaiement">
+            <span>Date du paiement</span>
+            <strong>{{ formatDateTime(retraitCommande.datePaiement) }}</strong>
+          </div>
         </div>
         <button
+          v-if="retraitCommande.statut === 'READY'"
           class="btn btn-primary"
-          :disabled="retraitCommande.statut !== 'READY' || retraitConfirming"
+          :disabled="retraitConfirming"
           @click="confirmerRetrait"
         >
           {{ retraitConfirming ? 'Confirmation...' : 'Confirmer le retrait et le paiement' }}
         </button>
+        <div v-else-if="retraitCommande.statut === 'DISTRIBUTED'" class="withdrawal-confirmed" role="status">
+          <strong>Retrait confirmé</strong>
+          <span>La commande est payée et la vente a été enregistrée.</span>
+        </div>
       </div>
     </section>
 
@@ -158,7 +169,7 @@
             <td class="actions-cell">
               <button class="btn-icon" @click="openDetailsModal(commande)" title="Voir les détails">Voir</button>
               <button
-                v-if="commande.statut !== 'CANCELLED'"
+                v-if="canSendReminder(commande)"
                 class="btn-icon"
                 @click="sendReminder(commande)"
                 title="Envoyer rappel"
@@ -201,6 +212,8 @@
               <div class="detail-item"><span class="detail-label">Email</span><span class="detail-value">{{ getMembreEmail(commandeDetails) }}</span></div>
               <div class="detail-item"><span class="detail-label">Statut</span><span class="detail-value">{{ getStatutLabel(commandeDetails.statut) }}</span></div>
               <div class="detail-item"><span class="detail-label">Code retrait</span><span class="detail-value">{{ commandeDetails.codeRetrait || 'N/A' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Paiement</span><span class="detail-value">{{ commandeDetails.paye ? 'Payé' : 'En attente' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Date du paiement</span><span class="detail-value">{{ formatDateTime(commandeDetails.datePaiement) }}</span></div>
             </div>
           </div>
 
@@ -209,8 +222,8 @@
             <div class="detail-grid">
               <div class="detail-item"><span class="detail-label">Point</span><span class="detail-value">{{ commandeDetails.pointCollecte?.nom || 'N/A' }}</span></div>
               <div class="detail-item"><span class="detail-label">Adresse</span><span class="detail-value">{{ commandeDetails.pointCollecte?.adresse || 'N/A' }}</span></div>
-              <div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">{{ formatDate(commandeDetails.dateRetrait) }}</span></div>
-              <div class="detail-item"><span class="detail-label">Créneau</span><span class="detail-value">{{ commandeDetails.creneauRetrait?.horaire || 'N/A' }}</span></div>
+              <div class="detail-item"><span class="detail-label">Date de retrait prévue</span><span class="detail-value">{{ formatDate(commandeDetails.dateRetrait) }}</span></div>
+              <div class="detail-item"><span class="detail-label">Créneau de retrait</span><span class="detail-value">{{ commandeDetails.creneauRetrait?.horaire || 'N/A' }}</span></div>
             </div>
           </div>
 
@@ -381,6 +394,10 @@ function getStatutLabel(statut) {
   return labels[statut] || statut
 }
 
+function canSendReminder(commande) {
+  return !['CANCELLED', 'DISTRIBUTED'].includes(commande?.statut)
+}
+
 function openDetailsModal(commande) {
   commandeDetails.value = commande
   showDetailsModal.value = true
@@ -446,8 +463,8 @@ function formatRetraitHoraire(retrait) {
 async function sendReminder(commande) {
   apiError.value = ''
   successMessage.value = ''
-  if (commande.statut === 'CANCELLED') {
-    apiError.value = "Impossible d'envoyer un rappel pour une commande annulée."
+  if (!canSendReminder(commande)) {
+    apiError.value = "Impossible d'envoyer un rappel pour une commande annulée ou retirée."
     return
   }
   try {
@@ -720,6 +737,21 @@ function buildStatutSummary() {
 .withdrawal-summary span {
   color: var(--text-secondary);
   font-size: 0.8rem;
+}
+
+.withdrawal-confirmed {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 290px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #86c79e;
+  border-radius: 6px;
+  background: #edf8f1;
+  color: #175c35;
+}
+
+.withdrawal-confirmed span {
+  font-size: 0.86rem;
 }
 
 .modal-overlay {

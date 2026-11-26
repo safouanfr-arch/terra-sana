@@ -97,12 +97,14 @@
         :to="`/produit/${produit.id}`"
         class="produit-card"
       >
-        <img
-          class="produit-image"
-          :src="getImageSrc(produit)"
-          :alt="`Image de ${produit.nom}`"
-          @error="onImgError($event, produit)"
-        />
+        <div :class="['produit-media', getProductMediaClass(produit)]">
+          <img
+            class="produit-image"
+            :src="getImageSrc(produit)"
+            :alt="`Image de ${produit.nom}`"
+            @error="onImgError($event, produit)"
+          />
+        </div>
 
         <div class="produit-content">
           <div class="produit-header-badges">
@@ -128,7 +130,7 @@
             <div class="produit-prix">
               <span v-if="hasPromotion(produit)" class="prix-original">{{ calculatePrixTTCOriginal(produit).toFixed(2) }} €</span>
               <span class="prix">{{ calculatePrixTTC(produit).toFixed(2) }} €</span>
-              <span class="unite">/ {{ produit.unite }}</span>
+              <span class="unite">/ {{ getPriceUnitLabel(produit) }}</span>
               <span v-if="hasPromotion(produit)" class="promotion-label">{{ produit.promotionNom }}</span>
             </div>
             <div class="produit-stock">
@@ -201,6 +203,20 @@ function getPrixEffectifHT(produit) {
 
 function getImageSrc(produit) {
   return getProductImageSrc(produit)
+}
+
+function getProductMediaClass(produit) {
+  const image = String(produit?.image || '').toLowerCase()
+  if (image.includes('carottes-bio')) return 'produit-media--carottes'
+  if (image.includes('jus-de-pomme')) return 'produit-media--jus'
+  if (image.includes('pommes-de-terre')) return 'produit-media--pommes-de-terre'
+  if (image.includes('oeufs')) return 'produit-media--oeufs'
+  return 'produit-media--standard'
+}
+
+function getPriceUnitLabel(produit) {
+  if (produit?.unite === 'kg') return 'kg'
+  return produit?.conditionnement || produit?.unite || 'unité'
 }
 
 function onImgError(ev, produit) {
@@ -420,13 +436,36 @@ const produitsFiltres = computed(() => {
   overflow: hidden;
 }
 
+.produit-media {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #ece7de;
+}
+
 .produit-image {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
-  border-radius: 0;
-  background: #ece7de;
+  transition: transform 180ms ease;
+}
+
+.produit-media--carottes {
+  background: #1f382f;
+}
+
+.produit-media--jus {
+  background: #fff;
+}
+
+.produit-media--pommes-de-terre .produit-image {
+  object-position: center 52%;
+}
+
+.produit-media--oeufs .produit-image {
+  object-position: center 58%;
 }
 
 .produit-content {
@@ -441,6 +480,7 @@ const produitsFiltres = computed(() => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.75rem;
+  min-height: 3.8rem;
 }
 
 .produit-category {
@@ -462,6 +502,8 @@ const produitsFiltres = computed(() => {
   margin: 0;
   font-size: 1.48rem;
   line-height: 1.06;
+  min-height: 2.12em;
+  text-wrap: balance;
 }
 
 .produit-description {
@@ -502,8 +544,12 @@ const produitsFiltres = computed(() => {
 }
 
 .produit-prix {
-  display: grid;
-  gap: 0.15rem;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 0.3rem;
+  row-gap: 0.15rem;
+  min-width: 0;
 }
 
 .prix {
@@ -513,12 +559,14 @@ const produitsFiltres = computed(() => {
 }
 
 .prix-original {
+  flex-basis: 100%;
   color: var(--text-muted);
   font-size: 0.82rem;
   text-decoration: line-through;
 }
 
 .promotion-label {
+  flex-basis: 100%;
   width: fit-content;
   padding: 0.18rem 0.5rem;
   border-radius: 999px;

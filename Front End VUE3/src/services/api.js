@@ -199,7 +199,8 @@ function stringifyImagesMeta(produit) {
     photos,
     badges,
     origine: produit.origine || '',
-    producteur: produit.producteur || ''
+    producteur: produit.producteur || '',
+    conditionnement: produit.conditionnement || ''
   })
 }
 
@@ -314,6 +315,7 @@ export function fromProduitDto(dto, categories = []) {
     badges,
     origine: meta.origine || '',
     producteur: meta.producteur || '',
+    conditionnement: meta.conditionnement || '',
     actif: dto.actif !== false
   }
 }

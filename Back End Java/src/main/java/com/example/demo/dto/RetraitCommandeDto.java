@@ -2,6 +2,7 @@ package com.example.demo.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.example.demo.model.enums.StatutCommande;
@@ -28,5 +29,6 @@ public class RetraitCommandeDto {
     private BigDecimal montantTotal;
     private StatutCommande statut;
     private Boolean paye;
+    private LocalDateTime datePaiement;
     private String codeRetrait;
 }

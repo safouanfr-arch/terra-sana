@@ -85,10 +85,15 @@ public class EmailTemplateServiceTest {
         EmailTemplateDto membership = emailTemplateService.getDefaultTemplateDto(
                 EmailNotificationType.MEMBERSHIP_VALIDATION
         );
+        EmailTemplateDto orderReady = emailTemplateService.getDefaultTemplateDto(
+                EmailNotificationType.ORDER_READY
+        );
 
         assertThat(confirmation.getContenu())
                 .contains("confirmée", "Créneau");
         assertThat(membership.getObjet())
                 .isEqualTo("Votre adhésion Terra Sana est validée");
+        assertThat(orderReady.getContenu())
+                .contains("Code unique de retrait : {{codeRetrait}}");
     }
 }

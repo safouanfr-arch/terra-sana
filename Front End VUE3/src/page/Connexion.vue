@@ -92,9 +92,8 @@
         <h4>Informations de connexion</h4>
         <p>
           Utilisez un compte administrateur ou membre existant en base.
-          Les comptes de démonstration actuels sont
-          <strong>admin.demo@terrasana.test</strong> et
-          <strong>membre.demo@terrasana.test</strong> avec le mot de passe
+          Le compte administrateur de démonstration est
+          <strong>admin.demo@terrasana.test</strong> avec le mot de passe
           <strong>demo-password</strong>.
         </p>
       </div>

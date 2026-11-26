@@ -63,6 +63,7 @@ public class RetraitService {
                 .montantTotal(commande.getMontantTTC())
                 .statut(commande.getStatut())
                 .paye(commande.getPaye())
+                .datePaiement(commande.getDatePaiement())
                 .codeRetrait(commande.getCodeRetrait())
                 .build();
     }
@@ -84,6 +85,7 @@ public class RetraitService {
                 .montantTotal(commande.getMontantTTC())
                 .statut(commande.getStatut())
                 .paye(commande.getPaye())
+                .datePaiement(commande.getDatePaiement())
                 .codeRetrait(commande.getCodeRetrait())
                 .build();
     }

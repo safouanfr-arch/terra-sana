@@ -253,6 +253,7 @@ public class EmailTemplateService {
                         Point de collecte : {{pointCollecte}}
                         Date de retrait : {{dateRetrait}}
                         Créneau : {{creneauRetrait}}
+                        Code unique de retrait : {{codeRetrait}}
                         """)
                 .active(true)
                 .build());

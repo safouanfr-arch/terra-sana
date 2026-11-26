@@ -37,7 +37,7 @@ class CommandeRepositoryPreparationTest {
     @Test
     void preparationCandidatesRespectTimeBoundariesAndStatus() {
         LocalDateTime now = LocalDateTime.of(2040, 5, 10, 10, 0);
-        Membre membre = membreRepository.findAll().get(0);
+        Membre membre = saveTestMember();
         CreneauCollecte creneau = creneauCollecteRepository.findAll().get(0);
 
         Commande after30Hours = saveCommande(membre, creneau, StatutCommande.CONFIRMED, now.plusHours(30));
@@ -75,7 +75,7 @@ class CommandeRepositoryPreparationTest {
 
     @Test
     void withdrawalCodeIsUniqueAndCanBeRetrieved() {
-        Membre membre = membreRepository.findAll().get(0);
+        Membre membre = saveTestMember();
         CreneauCollecte creneau = creneauCollecteRepository.findAll().get(0);
         LocalDateTime retrait = LocalDateTime.of(2040, 5, 10, 14, 0);
         Commande first = buildCommande(membre, creneau, StatutCommande.READY, retrait, "UNIQ01");
@@ -102,6 +102,21 @@ class CommandeRepositoryPreparationTest {
                 retrait,
                 null
         ));
+    }
+
+    private Membre saveTestMember() {
+        return membreRepository.saveAndFlush(Membre.builder()
+                .nom("Membre")
+                .prenom("Test")
+                .email("member-" + UUID.randomUUID() + "@terra.test")
+                .telephone("0470000000")
+                .adresse("Rue Test 1")
+                .ville("Bruxelles")
+                .codePostal("1000")
+                .pays("Belgique")
+                .motDePasse("mot-de-passe-inutilise")
+                .actif(true)
+                .build());
     }
 
     private Commande buildCommande(

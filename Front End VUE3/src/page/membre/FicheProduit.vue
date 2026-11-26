@@ -16,7 +16,7 @@
 
     <div class="fiche-produit">
       <div class="fiche-image-section">
-        <div class="fiche-image-main">
+        <div :class="['fiche-image-main', getProductMediaClass(produit)]">
           <button
             type="button"
             class="image-zoom-trigger"
@@ -57,87 +57,85 @@
           </div>
         </div>
         
+      </div>
+
+      <div class="fiche-info-section">
+        <div class="fiche-category">{{ produit.categorie }}</div>
+        <h1 class="fiche-titre">{{ produit.nom }}</h1>
+
         <div class="fiche-badges">
           <span v-if="produit.badges?.local" class="badge badge-local">Local</span>
           <span v-if="produit.badges?.bio" class="badge badge-bio">Bio</span>
           <span v-if="produit.badges?.vegetarien" class="badge badge-vegetarien">Végétarien</span>
           <span v-if="produit.badges?.vegan" class="badge badge-vegan">Vegan</span>
         </div>
-      </div>
 
-      <div class="fiche-info-section">
-        <div class="fiche-category">{{ produit.categorie }}</div>
-        <h1 class="fiche-titre">{{ produit.nom }}</h1>
-        
-        <div class="fiche-prix-section">
-          <div class="fiche-prix">
-            <span v-if="hasPromotion(produit)" class="prix-original">{{ calculatePrixTTCOriginal(produit).toFixed(2) }} €</span>
-            <span class="prix-montant">{{ calculatePrixTTC(produit).toFixed(2) }} €</span>
-            <span class="prix-unite">/ {{ produit.unite }}</span>
-            <span v-if="hasPromotion(produit)" class="promotion-label">{{ produit.promotionNom }}</span>
-          </div>
-          <div class="fiche-stock">
-            <span v-if="produit.stock <= 5" class="stock-warning">
-              Plus que {{ produit.stock }} disponible(s)
-            </span>
-            <span v-else class="stock-ok">
-              En stock ({{ produit.stock }} disponible(s))
-            </span>
-          </div>
-        </div>
+        <p class="fiche-description">{{ produit.description }}</p>
 
-        <div class="fiche-description">
-          <h3>Description</h3>
-          <p>{{ produit.description }}</p>
-        </div>
-
-        <div class="fiche-details">
-          <div class="detail-item">
-            <span class="detail-label">Producteur :</span>
-            <span class="detail-value">{{ produit.producteur }}</span>
+        <dl class="fiche-details">
+          <div v-if="produit.conditionnement" class="detail-item">
+            <dt>Conditionnement</dt>
+            <dd>{{ produit.conditionnement }}</dd>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Origine :</span>
-            <span class="detail-value">{{ produit.origine }}</span>
+          <div v-if="produit.origine" class="detail-item">
+            <dt>Origine</dt>
+            <dd>{{ produit.origine }}</dd>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Unité :</span>
-            <span class="detail-value">{{ produit.unite }}</span>
+          <div v-if="produit.producteur" class="detail-item">
+            <dt>Producteur</dt>
+            <dd>{{ produit.producteur }}</dd>
           </div>
           <div v-if="produit.datePeremption" class="detail-item">
-            <span class="detail-label">Péremption :</span>
-            <span class="detail-value">{{ formatDate(produit.datePeremption) }}</span>
+            <dt>Péremption</dt>
+            <dd>{{ formatDate(produit.datePeremption) }}</dd>
           </div>
-        </div>
+        </dl>
 
-        <div class="fiche-actions">
+        <section class="purchase-panel" aria-label="Ajouter le produit au panier">
+          <div class="purchase-heading">
+          <div class="fiche-prix">
+            <span v-if="hasPromotion(produit)" class="prix-original">{{ calculatePrixTTCOriginal(produit).toFixed(2) }} €</span>
+              <div class="prix-ligne">
+                <span class="prix-montant">{{ calculatePrixTTC(produit).toFixed(2) }} €</span>
+                <span class="prix-unite">/ {{ getPriceUnitLabel(produit) }}</span>
+              </div>
+            <span v-if="hasPromotion(produit)" class="promotion-label">{{ produit.promotionNom }}</span>
+          </div>
+            <span :class="['stock-status', produit.stock <= 5 ? 'stock-warning' : 'stock-ok']">
+              {{ getStockLabel(produit) }}
+            </span>
+          </div>
+
+          <div class="purchase-controls">
           <div class="quantite-selector">
-            <label>Quantité :</label>
+              <label for="product-quantity">Quantité</label>
             <div class="quantite-controls">
-              <button @click="quantite = Math.max(1, quantite - 1)" :disabled="quantite <= 1">−</button>
-              <input 
-                type="number" 
-                v-model.number="quantite" 
+                <button type="button" aria-label="Diminuer la quantité" @click="quantite = Math.max(1, quantite - 1)" :disabled="quantite <= 1">−</button>
+              <input
+                  id="product-quantity"
+                  v-model.number="quantite"
+                type="number"
                 @input="quantite = Math.max(1, Math.min(produit.stock, quantite))"
                 min="1"
                 :max="produit.stock"
               />
-              <button @click="quantite = Math.min(produit.stock, quantite + 1)" :disabled="quantite >= produit.stock">+</button>
+                <button type="button" aria-label="Augmenter la quantité" @click="quantite = Math.min(produit.stock, quantite + 1)" :disabled="quantite >= produit.stock">+</button>
             </div>
           </div>
 
           <div class="total-price">
-            <span class="total-label">Total :</span>
+              <span class="total-label">Total TTC</span>
             <span class="total-montant">{{ (calculatePrixTTC(produit) * quantite).toFixed(2) }} €</span>
           </div>
         </div>
 
         <div class="fiche-buttons">
-          <button :class="['btn', 'btn-primary', { 'btn-success': added }]" @click="handleAddToCart">
+            <button type="button" :class="['btn', 'btn-primary', { 'btn-success': added }]" @click="handleAddToCart">
             {{ added ? 'Ajouté au panier' : 'Ajouter au panier' }}
           </button>
-          <button class="btn btn-secondary" @click="handleBuyNow">Commander maintenant</button>
+            <button type="button" class="btn btn-secondary" @click="handleBuyNow">Commander maintenant</button>
         </div>
+        </section>
       </div>
     </div>
 
@@ -145,10 +143,12 @@
       <h2>Produits similaires</h2>
       <div class="produits-grid">
         <router-link v-for="p in produitsLies" :key="p.id" :to="`/produit/${p.id}`" class="produit-card-mini">
-          <img class="produit-image-mini" :src="getProductImageSrc(p)" :alt="`Image de ${p.nom}`" @error="onMiniError($event, p)" />
+          <div :class="['produit-media-mini', getProductMediaClass(p)]">
+            <img class="produit-image-mini" :src="getProductImageSrc(p)" :alt="`Image de ${p.nom}`" @error="onMiniError($event, p)" />
+          </div>
           <div class="produit-info-mini">
             <h4>{{ p.nom }}</h4>
-            <span class="prix-mini">{{ calculatePrixTTC(p).toFixed(2) }} € / {{ p.unite }}</span>
+            <span class="prix-mini">{{ calculatePrixTTC(p).toFixed(2) }} € / {{ getPriceUnitLabel(p) }}</span>
           </div>
         </router-link>
       </div>
@@ -183,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 // ...existing code...
 import { usePanierStore } from '../../stores/panierStore'
@@ -203,6 +203,16 @@ const currentImageType = ref('emoji')
 const lightboxOpen = ref(false)
 
 const produit = computed(() => produitsData.value.find(p => p.id === parseInt(route.params.id)))
+
+watch(produit, (nouveauProduit, ancienProduit) => {
+  if (nouveauProduit?.id === ancienProduit?.id) return
+
+  currentImage.value = nouveauProduit?.image ?? null
+  currentImageType.value = 'emoji'
+  quantite.value = 1
+  added.value = false
+  lightboxOpen.value = false
+})
 
 const productPhotos = computed(() => {
   if (!produit.value) return []
@@ -231,10 +241,6 @@ onMounted(async () => {
       ...produitsActifs.filter(p => p.id !== currentProduit.id)
     ]
 
-    if (produit.value) {
-      currentImage.value = produit.value.image
-      currentImageType.value = 'emoji'
-    }
   } catch (error) {
     apiError.value = getApiErrorMessage(error)
     produitsData.value = []
@@ -300,6 +306,35 @@ const hasPromotion = (produit) => {
 
 function getPrixEffectifHT(produit) {
   return Number(produit.prixEffectif ?? produit.prixPromotionnel ?? produit.prixUnitaire ?? produit.prix ?? 0)
+}
+
+function getProductMediaClass(produit) {
+  const image = String(produit?.image || '').toLowerCase()
+  if (image.includes('carottes-bio')) return 'produit-media--carottes'
+  if (image.includes('jus-de-pomme')) return 'produit-media--jus'
+  if (image.includes('pommes-de-terre')) return 'produit-media--pommes-de-terre'
+  if (image.includes('oeufs')) return 'produit-media--oeufs'
+  return 'produit-media--standard'
+}
+
+function getPriceUnitLabel(produit) {
+  if (produit?.unite === 'kg') return 'kg'
+  return produit?.conditionnement || produit?.unite || 'unité'
+}
+
+function getStockLabel(produit) {
+  const stock = Number(produit?.stock ?? 0)
+  const formattedStock = new Intl.NumberFormat('fr-BE', { maximumFractionDigits: 2 }).format(stock)
+  const units = {
+    kg: 'kg',
+    litre: 'litres',
+    barquette: 'boîtes',
+    pièce: 'unités'
+  }
+  const unit = units[produit?.unite] || 'unités'
+  return stock <= 5
+    ? `Plus que ${formattedStock} ${unit}`
+    : `En stock : ${formattedStock} ${unit}`
 }
 
 const produitsLies = computed(() => {
@@ -667,4 +702,306 @@ const handleBuyNow = () => {
 }
 .produit-info-mini { padding: .75rem 1rem; }
 .prix-mini { color: #6b7280; }
+
+/* Product detail refresh */
+.fiche-produit-page {
+  max-width: 1180px;
+  padding: 0 1.25rem 3rem;
+  box-sizing: border-box;
+}
+
+.fiche-header {
+  padding: 1rem 0 1.5rem;
+  margin-bottom: 0;
+}
+
+.fiche-produit {
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  gap: 3rem;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fiche-image-main {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid rgba(61, 73, 68, 0.14);
+  border-radius: 8px;
+  background: #ece7de;
+}
+
+.image-zoom-trigger {
+  height: 100%;
+}
+
+.image-display {
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.produit-media--carottes,
+.produit-media-mini.produit-media--carottes {
+  background: #1f382f;
+}
+
+.produit-media--jus,
+.produit-media-mini.produit-media--jus {
+  background: #fff;
+}
+
+.fiche-image-main.produit-media--carottes,
+.fiche-image-main.produit-media--jus {
+  aspect-ratio: 1;
+}
+
+.produit-media--pommes-de-terre .image-display,
+.produit-media-mini.produit-media--pommes-de-terre .produit-image-mini {
+  object-position: center 52%;
+}
+
+.produit-media--oeufs .image-display,
+.produit-media-mini.produit-media--oeufs .produit-image-mini {
+  object-position: center 58%;
+}
+
+.fiche-info-section {
+  min-width: 0;
+}
+
+.fiche-category {
+  margin-bottom: 0.45rem;
+  color: #607168;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.fiche-titre {
+  margin: 0;
+  font-size: 2.35rem;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.fiche-badges {
+  position: static;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1rem 0 0;
+}
+
+.fiche-description {
+  margin: 1.4rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #4f5e57;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.fiche-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1.5rem 0 0;
+  padding: 1.2rem 0;
+  border-top: 1px solid rgba(61, 73, 68, 0.14);
+  border-bottom: 1px solid rgba(61, 73, 68, 0.14);
+}
+
+.detail-item {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.detail-item dt {
+  color: #738078;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detail-item dd {
+  margin: 0;
+  color: #26352e;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.purchase-panel {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(61, 73, 68, 0.16);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(31, 49, 41, 0.06);
+}
+
+.purchase-heading,
+.purchase-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.purchase-heading {
+  align-items: flex-start;
+}
+
+.purchase-controls {
+  align-items: end;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(61, 73, 68, 0.12);
+}
+
+.prix-ligne {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.fiche-prix .prix-montant {
+  color: #213a32;
+  font-size: 2rem;
+}
+
+.fiche-prix .prix-unite {
+  margin-left: 0;
+  color: #65746c;
+  font-size: 0.92rem;
+}
+
+.stock-status {
+  padding-top: 0.45rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.quantite-selector,
+.total-price {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.quantite-selector label,
+.total-label {
+  color: #68766f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.quantite-controls {
+  height: 42px;
+  border-color: rgba(61, 73, 68, 0.2);
+  border-radius: 6px;
+}
+
+.quantite-controls button {
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+}
+
+.quantite-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.quantite-controls input {
+  width: 54px;
+}
+
+.total-price {
+  justify-items: end;
+}
+
+.total-price .total-montant {
+  color: #213a32;
+  font-size: 1.25rem;
+}
+
+.fiche-buttons {
+  margin-top: 1.25rem;
+}
+
+.fiche-buttons .btn {
+  flex: 1;
+  min-height: 46px;
+}
+
+.produits-lies {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(61, 73, 68, 0.14);
+}
+
+.produit-card-mini {
+  border-radius: 8px;
+}
+
+.produit-media-mini {
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #ece7de;
+}
+
+.produit-image-mini {
+  height: 100%;
+  aspect-ratio: auto;
+  object-position: center;
+}
+
+.produit-info-mini h4 {
+  margin: 0 0 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .fiche-produit {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .fiche-image-section {
+    max-width: 720px;
+  }
+}
+
+@media (max-width: 640px) {
+  .fiche-produit-page {
+    padding-inline: 1rem;
+  }
+
+  .fiche-titre {
+    font-size: 2rem;
+  }
+
+  .fiche-details {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-heading,
+  .purchase-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stock-status,
+  .total-price {
+    justify-items: start;
+    text-align: left;
+  }
+}
 </style>

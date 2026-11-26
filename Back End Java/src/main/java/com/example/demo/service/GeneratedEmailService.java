@@ -299,7 +299,11 @@ public class GeneratedEmailService {
             return null;
         }
 
-        String finalBody = ensureRequiredActionLink(type, rendered.body(), variables);
+        String finalBody = ensureRequiredWithdrawalCode(
+                type,
+                ensureRequiredActionLink(type, rendered.body(), variables),
+                variables
+        );
         String normalizedBody = normalizeBodyHtml(finalBody);
         String storedSubject = redactSensitiveValues(rendered.subject(), sensitiveValues);
         String storedBody = redactSensitiveValues(normalizedBody, sensitiveValues);
@@ -366,6 +370,28 @@ public class GeneratedEmailService {
                 ? "Lien de confirmation de l'adresse email :"
                 : "Lien de definition du mot de passe :";
         return existingBody + "\n\n" + label + "\n" + link;
+    }
+
+    private String ensureRequiredWithdrawalCode(
+            EmailNotificationType type,
+            String body,
+            Map<String, String> variables
+    ) {
+        if (type != EmailNotificationType.ORDER_READY) {
+            return body;
+        }
+
+        String withdrawalCode = variables != null ? variables.get("codeRetrait") : null;
+        if (withdrawalCode == null || withdrawalCode.isBlank()) {
+            return body;
+        }
+
+        String existingBody = body == null ? "" : body;
+        if (existingBody.contains(withdrawalCode)) {
+            return existingBody;
+        }
+
+        return existingBody + "\n\nCode unique de retrait : " + withdrawalCode;
     }
 
     private void applySendResult(GeneratedEmail email, EmailSendResult sendResult) {

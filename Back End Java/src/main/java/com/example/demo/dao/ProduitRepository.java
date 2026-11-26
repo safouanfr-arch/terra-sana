@@ -16,6 +16,10 @@ import jakarta.persistence.LockModeType;
 public interface ProduitRepository extends JpaRepository<Produit, Long> {
 
 	List<Produit> findByActifTrue();
+
+	@Query("select distinct p from Produit p left join fetch p.tagsAlimentaires")
+	List<Produit> findAllWithTags();
+
 	long countByActifTrue();
 	long countByActifFalse();
 	long countByStockActuelLessThanEqual(BigDecimal stockActuel);

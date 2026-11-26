@@ -27,6 +27,7 @@ import com.example.demo.dao.PromotionRepository;
 import com.example.demo.model.Produit;
 import com.example.demo.model.Promotion;
 import com.example.demo.model.enums.TypeReduction;
+import com.example.demo.model.enums.UniteProduit;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -89,19 +90,19 @@ class PersistenceConfigurationTest {
     void demoCatalogUsesCoherentLocalProductsWithoutOverwritingExistingData() {
         assertThat(categorieRepository.findAll())
                 .extracting("nom")
-                .contains("Légumes bio", "Fruits de saison", "Épicerie locale");
+                .contains("Légumes", "Fruits de saison", "Épicerie locale");
         assertThat(produitRepository.findAll())
                 .extracting("nom")
                 .containsExactlyInAnyOrder(
-                        "Carottes bio",
-                        "Pommes de terre",
-                        "Pommes Jonagold",
-                        "Jus de pomme artisanal",
-                        "Œufs fermiers x6"
+                        "Carottes longues jaunes de Belgique",
+                        "Pommes de terre Annabelle - 5 kg",
+                        "Pommes Jonagold bio",
+                        "Jus de pomme D'Upigny - 3 L",
+                        "Œufs de ferme - boîte de 6"
                 );
 
         Produit carottes = produitRepository.findAll().stream()
-                .filter(produit -> "Carottes bio".equals(produit.getNom()))
+                .filter(produit -> "Carottes longues jaunes de Belgique".equals(produit.getNom()))
                 .findFirst()
                 .orElseThrow();
         String customDescription = "Description personnalisée conservée.";
@@ -112,12 +113,21 @@ class PersistenceConfigurationTest {
 
         assertThat(produitRepository.findById(carottes.getId()).orElseThrow().getDescription())
                 .isEqualTo(customDescription);
+
+        Produit jus = produitRepository.findAll().stream()
+                .filter(produit -> "Jus de pomme D'Upigny - 3 L".equals(produit.getNom()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(jus.getUnite()).isEqualTo(UniteProduit.PIECE);
+        assertThat(jus.getPrixUnitaire()).isEqualByComparingTo("8.48");
+        assertThat(jus.getImages()).contains("\"conditionnement\":\"poche de 3 L\"");
+
         for (String nom : List.of(
-                "Carottes bio",
-                "Pommes de terre",
-                "Pommes Jonagold",
-                "Jus de pomme artisanal",
-                "Œufs fermiers x6"
+                "Carottes longues jaunes de Belgique",
+                "Pommes de terre Annabelle - 5 kg",
+                "Pommes Jonagold bio",
+                "Jus de pomme D'Upigny - 3 L",
+                "Œufs de ferme - boîte de 6"
         )) {
             Produit produit = produitRepository.findAll().stream()
                     .filter(item -> nom.equals(item.getNom()))

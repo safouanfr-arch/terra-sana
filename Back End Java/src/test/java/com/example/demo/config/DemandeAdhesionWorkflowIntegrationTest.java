@@ -26,6 +26,7 @@ import com.example.demo.dao.GeneratedEmailRepository;
 import com.example.demo.dao.MembreRepository;
 import com.example.demo.model.DemandeAdhesion;
 import com.example.demo.model.GeneratedEmail;
+import com.example.demo.model.Membre;
 import com.example.demo.model.enums.EmailNotificationType;
 import com.example.demo.model.enums.EmailSendStatus;
 import com.example.demo.model.enums.StatutDemande;
@@ -286,7 +287,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
     void resendAlwaysReturnsSameMessageForUnknownMemberAndNonEligibleRequests() throws Exception {
         long emailCountBefore = generatedEmailRepository.count();
         String unknownEmail = "unknown-" + UUID.randomUUID() + "@terra.test";
-        String memberEmail = membreRepository.findAll().get(0).getEmail();
+        String memberEmail = membreRepository.saveAndFlush(testMember()).getEmail();
         String pendingEmail = saveRequestWithStatus(StatutDemande.EN_ATTENTE);
         String approvedEmail = saveRequestWithStatus(StatutDemande.APPROUVEE);
         String rejectedEmail = saveRequestWithStatus(StatutDemande.REFUSEE);
@@ -416,5 +417,20 @@ class DemandeAdhesionWorkflowIntegrationTest {
                 .conditionsVersion("v1.0")
                 .build());
         return email;
+    }
+
+    private Membre testMember() {
+        return Membre.builder()
+                .nom("Membre")
+                .prenom("Test")
+                .email("member-" + UUID.randomUUID() + "@terra.test")
+                .telephone("0470000000")
+                .adresse("Rue Test 1")
+                .ville("Bruxelles")
+                .codePostal("1000")
+                .pays("Belgique")
+                .motDePasse("mot-de-passe-inutilise")
+                .actif(true)
+                .build();
     }
 }

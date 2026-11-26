@@ -11,6 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -20,14 +24,20 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.demo.dao.CommandeRepository;
 import com.example.demo.dao.CreneauCollecteRepository;
+import com.example.demo.dao.MembreRepository;
 import com.example.demo.model.Commande;
+import com.example.demo.model.CreneauCollecte;
+import com.example.demo.model.Membre;
+import com.example.demo.model.enums.StatutCommande;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 @TestPropertySource(properties = {
         "app.order-preparation.email.enabled=true",
         "app.order-preparation.email.recipient=preparation@terrasana.test"
@@ -42,6 +52,9 @@ class SecurityAccessTest {
 
     @Autowired
     private CreneauCollecteRepository creneauCollecteRepository;
+
+    @Autowired
+    private MembreRepository membreRepository;
 
     @Test
     void adminEndpointWithoutAuthenticationReturns401() throws Exception {
@@ -209,10 +222,7 @@ class SecurityAccessTest {
 
     @Test
     void failedManualPreparationEmailKeepsOrderStateAndPdfAvailable() throws Exception {
-        Commande commande = commandeRepository.findAll().stream()
-                .filter(item -> item.getStatut() == com.example.demo.model.enums.StatutCommande.READY)
-                .findFirst()
-                .orElseThrow();
+        Commande commande = saveReadyOrder();
         Long creneauId = commande.getCreneauCollecte().getId();
         var initialStatus = commande.getStatut();
 
@@ -284,10 +294,7 @@ class SecurityAccessTest {
 
     @Test
     void withdrawalSearchReturnsOnlyRequiredData() throws Exception {
-        Commande commande = commandeRepository.findAll().stream()
-                .filter(item -> item.getCodeRetrait() != null)
-                .findFirst()
-                .orElseThrow();
+        Commande commande = saveReadyOrder();
         String code = commande.getCodeRetrait().toLowerCase();
 
         mockMvc.perform(post("/api/admin/retraits/rechercher")
@@ -305,6 +312,35 @@ class SecurityAccessTest {
                 .andExpect(jsonPath("$.produits").doesNotExist())
                 .andExpect(jsonPath("$.membreEmail").doesNotExist())
                 .andExpect(jsonPath("$.montantHT").doesNotExist())
-                .andExpect(jsonPath("$.datePaiement").doesNotExist());
+                .andExpect(jsonPath("$.datePaiement").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    private Commande saveReadyOrder() {
+        CreneauCollecte creneau = creneauCollecteRepository.findAll().get(0);
+        Membre membre = membreRepository.saveAndFlush(Membre.builder()
+                .nom("Membre")
+                .prenom("Test")
+                .email("member-" + UUID.randomUUID() + "@terra.test")
+                .telephone("0470000000")
+                .adresse("Rue Test 1")
+                .ville("Bruxelles")
+                .codePostal("1000")
+                .pays("Belgique")
+                .motDePasse("mot-de-passe-inutilise")
+                .actif(true)
+                .build());
+        return commandeRepository.saveAndFlush(Commande.builder()
+                .numero("TEST-SECURITY-" + UUID.randomUUID())
+                .codeRetrait(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
+                .statut(StatutCommande.READY)
+                .montantHT(BigDecimal.ZERO)
+                .montantTVA(BigDecimal.ZERO)
+                .montantTTC(BigDecimal.ZERO)
+                .paye(false)
+                .dateCommande(LocalDateTime.now())
+                .dateRetraitPrevu(LocalDateTime.of(creneau.getCreneau(), creneau.getHeureDebut()))
+                .membre(membre)
+                .creneauCollecte(creneau)
+                .build());
     }
 }

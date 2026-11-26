@@ -20,22 +20,15 @@ import com.example.demo.dao.AdministrateurRepository;
 import com.example.demo.dao.CategorieRepository;
 import com.example.demo.dao.CommandeRepository;
 import com.example.demo.dao.CreneauCollecteRepository;
-import com.example.demo.dao.MembreRepository;
 import com.example.demo.dao.PointCollecteRepository;
 import com.example.demo.dao.ProduitRepository;
-import com.example.demo.dto.CommandeCreateItemDto;
-import com.example.demo.dto.CommandeCreateRequestDto;
-import com.example.demo.dto.CommandeResponseDto;
 import com.example.demo.model.Administrateur;
 import com.example.demo.model.Categorie;
 import com.example.demo.model.CreneauCollecte;
-import com.example.demo.model.Membre;
 import com.example.demo.model.PointCollecte;
 import com.example.demo.model.Produit;
-import com.example.demo.model.enums.StatutCommande;
 import com.example.demo.model.enums.TagAlimentaire;
 import com.example.demo.model.enums.UniteProduit;
-import com.example.demo.service.CommandeService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -46,23 +39,21 @@ public class DemoDataSeeder implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(DemoDataSeeder.class);
 
     private final AdministrateurRepository administrateurRepository;
-    private final MembreRepository membreRepository;
     private final CategorieRepository categorieRepository;
     private final ProduitRepository produitRepository;
     private final PointCollecteRepository pointCollecteRepository;
     private final CreneauCollecteRepository creneauCollecteRepository;
     private final CommandeRepository commandeRepository;
-    private final CommandeService commandeService;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
         Administrateur admin = seedAdministrateur();
-        Membre membre = seedMembre();
 
         Categorie legumes = seedCategorie(
+                "Légumes",
+                "Légumes frais proposés par les producteurs partenaires.",
                 "Légumes bio",
-                "Légumes frais issus de l'agriculture biologique.",
                 "Legumes bio"
         );
         Categorie fruits = seedCategorie(
@@ -75,55 +66,60 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "Epicerie locale"
         );
 
-        Produit carottes = seedProduit(
-                "Carottes bio",
-                "Carottes bio croquantes cultivées en Belgique, vendues au kilo.",
-                decimal("3.40"),
+        seedProduit(
+                "Carottes longues jaunes de Belgique",
+                "Ancienne variété belge à la chair aromatique et légèrement sucrée, adaptée aux salades, soupes, purées et plats mijotés.",
+                decimal("2.74"),
                 UniteProduit.KG,
-                decimal("80.00"),
+                decimal("25.00"),
                 legumes,
-                EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/carottes-bio.jpg", "Belgique", "Ferme du Parc", true, true, true, true)
+                EnumSet.of(TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
+                buildImagesMeta("/product-images/carottes-bio.jpg", "Belgique", "", "1 kg", false, true, true, true),
+                "Carottes bio"
         );
-        Produit pommesTerre = seedProduit(
-                "Pommes de terre",
-                "Pommes de terre belges polyvalentes, vendues au kilo.",
-                decimal("2.80"),
-                UniteProduit.KG,
-                decimal("120.00"),
+        seedProduit(
+                "Pommes de terre Annabelle - 5 kg",
+                "Pommes de terre Annabelle à chair ferme, proposées en sac de 5 kg. Elles conviennent aux cuissons vapeur, salades, gratins et pommes sautées.",
+                decimal("7.08"),
+                UniteProduit.PIECE,
+                decimal("20.00"),
                 legumes,
-                EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/pommes-de-terre.jpg", "Belgique", "Maraîcher des Flandres", true, true, true, true)
+                EnumSet.of(TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
+                buildImagesMeta("/product-images/pommes-de-terre.jpg", "", "L'Épi lacté", "sac de 5 kg", false, false, true, true),
+                "Pommes de terre"
         );
-        Produit pommes = seedProduit(
-                "Pommes Jonagold",
-                "Pommes Jonagold belges, croquantes et légèrement acidulées, vendues au kilo.",
-                decimal("4.20"),
+        seedProduit(
+                "Pommes Jonagold bio",
+                "Pommes Jonagold belges à la chair croquante et juteuse, au goût doux, fruité et légèrement acidulé. Idéales à croquer, en compote ou en pâtisserie.",
+                decimal("3.29"),
                 UniteProduit.KG,
-                decimal("60.00"),
+                decimal("30.00"),
                 fruits,
                 EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/pomme-jonagold.webp", "Belgique", "Verger Saint-Martin", true, true, true, true)
+                buildImagesMeta("/product-images/pomme-jonagold.webp", "Belgique", "", "1 kg", true, true, true, true),
+                "Pommes Jonagold"
         );
-        Produit jusPomme = seedProduit(
-                "Jus de pomme artisanal",
-                "Jus de pomme belge non filtré, conditionné en bouteille de 1 litre.",
-                decimal("5.50"),
-                UniteProduit.LITRE,
-                decimal("24.00"),
+        seedProduit(
+                "Jus de pomme D'Upigny - 3 L",
+                "Jus de pomme pasteurisé belge, sans additif ni sucre ajouté. Format familial de 3 litres avec robinet, à servir frais et à conserver au réfrigérateur après ouverture.",
+                decimal("8.48"),
+                UniteProduit.PIECE,
+                decimal("15.00"),
                 epicerie,
-                EnumSet.of(TagAlimentaire.BIO, TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
-                buildImagesMeta("/product-images/jus-de-pomme-artisanal.jpg", "Belgique", "Atelier du Verger", true, true, true, true)
+                EnumSet.of(TagAlimentaire.LOCAL, TagAlimentaire.VEGAN, TagAlimentaire.VEGETARIEN),
+                buildImagesMeta("/product-images/jus-de-pomme-artisanal.jpg", "Upigny, Belgique", "Ferme d'Assonleville", "poche de 3 L", false, true, true, true),
+                "Jus de pomme artisanal"
         );
-        Produit oeufs = seedProduit(
-                "Œufs fermiers x6",
-                "Six œufs fermiers belges conditionnés en boîte.",
-                decimal("4.90"),
+        seedProduit(
+                "Œufs de ferme - boîte de 6",
+                "Boîte de six œufs de ferme d'origine belge, à conserver au frais après achat.",
+                decimal("2.26"),
                 UniteProduit.BARQUETTE,
-                decimal("18.00"),
+                decimal("25.00"),
                 epicerie,
-                EnumSet.of(TagAlimentaire.LOCAL),
-                buildImagesMeta("/product-images/oeufs.jpg", "Belgique", "Ferme des Prés", false, true, false, true),
+                EnumSet.of(TagAlimentaire.LOCAL, TagAlimentaire.VEGETARIEN),
+                buildImagesMeta("/product-images/oeufs.jpg", "Belgique", "La Ferme Belge", "boîte de 6", false, true, false, true),
+                "Œufs fermiers x6",
                 "Oeufs fermiers"
         );
 
@@ -134,14 +130,14 @@ public class DemoDataSeeder implements CommandLineRunner {
         );
 
         LocalDateTime now = LocalDateTime.now();
-        CreneauCollecte creneau1 = seedCreneau(
+        seedCreneau(
                 pointCollecte,
                 now.toLocalDate().plusDays(2),
                 LocalTime.of(18, 0),
                 LocalTime.of(20, 0),
                 now
         );
-        CreneauCollecte creneau2 = seedCreneau(
+        seedCreneau(
                 pointCollecte,
                 now.toLocalDate().plusDays(3),
                 LocalTime.of(18, 30),
@@ -149,12 +145,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 now
         );
 
-        seedCommandesDemoIfMissing(membre, creneau1, creneau2, carottes, pommesTerre, pommes, jusPomme, oeufs);
-
         log.info(
-                "Données de démonstration prêtes : admin={}, membre={}, catégories={}, produits={}, points={}, créneaux={}, commandes={}",
+                "Données de référence prêtes : admin={}, catégories={}, produits={}, points={}, créneaux={}, commandes={}",
                 admin.getEmail(),
-                membre.getEmail(),
                 categorieRepository.count(),
                 produitRepository.count(),
                 pointCollecteRepository.count(),
@@ -178,35 +171,27 @@ public class DemoDataSeeder implements CommandLineRunner {
                 ));
     }
 
-    private Membre seedMembre() {
-        return membreRepository.findByEmailIgnoreCase("membre.demo@terrasana.test")
-                .orElseGet(() -> membreRepository.save(
-                        Membre.builder()
-                                .nom("Demo")
-                                .prenom("Membre")
-                                .email("membre.demo@terrasana.test")
-                                .telephone("0470000000")
-                                .adresse("Rue des Tests 10")
-                                .ville("Bruxelles")
-                                .codePostal("1000")
-                                .pays("Belgique")
-                                .motDePasse(passwordEncoder.encode("demo-password"))
-                                .actif(true)
-                                .build()
-                ));
-    }
-
     private Categorie seedCategorie(String nom, String description, String... anciensNoms) {
-        return categorieRepository.findAll().stream()
-                .filter(categorie -> matchesName(categorie.getNom(), nom, anciensNoms))
+        Categorie categorie = categorieRepository.findAll().stream()
+                .filter(item -> matchesName(item.getNom(), nom, anciensNoms))
                 .findFirst()
-                .orElseGet(() -> categorieRepository.save(
-                        Categorie.builder()
-                                .nom(nom)
-                                .description(description)
-                                .actif(true)
-                                .build()
-                ));
+                .orElse(null);
+
+        if (categorie == null) {
+            return categorieRepository.save(Categorie.builder()
+                    .nom(nom)
+                    .description(description)
+                    .actif(true)
+                    .build());
+        }
+
+        if (!equalsIgnoreCase(categorie.getNom(), nom)) {
+            categorie.setNom(nom);
+            categorie.setDescription(description);
+            return categorieRepository.save(categorie);
+        }
+
+        return categorie;
     }
 
     private Produit seedProduit(
@@ -220,26 +205,41 @@ public class DemoDataSeeder implements CommandLineRunner {
             String images,
             String... anciensNoms
     ) {
-        return produitRepository.findAll().stream()
-                .filter(produit -> matchesName(produit.getNom(), nom, anciensNoms))
-                .filter(produit -> produit.getUnite() == unite)
-                .filter(produit -> produit.getCategorie() != null)
-                .filter(produit -> Objects.equals(produit.getCategorie().getId(), categorie.getId()))
+        Produit produit = produitRepository.findAllWithTags().stream()
+                .filter(item -> matchesName(item.getNom(), nom, anciensNoms))
                 .findFirst()
-                .orElseGet(() -> produitRepository.save(
-                        Produit.builder()
-                                .nom(nom)
-                                .description(description)
-                                .prixUnitaire(prixUnitaire)
-                                .unite(unite)
-                                .tauxTva(decimal("6.00"))
-                                .stockActuel(stockActuel)
-                                .images(images)
-                                .actif(true)
-                                .tagsAlimentaires(tagsAlimentaires)
-                                .categorie(categorie)
-                                .build()
-                ));
+                .orElse(null);
+
+        if (produit == null) {
+            return produitRepository.save(Produit.builder()
+                    .nom(nom)
+                    .description(description)
+                    .prixUnitaire(prixUnitaire)
+                    .unite(unite)
+                    .tauxTva(decimal("6.00"))
+                    .stockActuel(stockActuel)
+                    .images(images)
+                    .actif(true)
+                    .tagsAlimentaires(tagsAlimentaires)
+                    .categorie(categorie)
+                    .build());
+        }
+
+        // Migrate only legacy demo records once. Later admin edits remain persistent.
+        if (!equalsIgnoreCase(produit.getNom(), nom)) {
+            produit.setNom(nom);
+            produit.setDescription(description);
+            produit.setPrixUnitaire(prixUnitaire);
+            produit.setUnite(unite);
+            produit.setTauxTva(decimal("6.00"));
+            produit.setImages(images);
+            produit.setCategorie(categorie);
+            produit.getTagsAlimentaires().clear();
+            produit.getTagsAlimentaires().addAll(tagsAlimentaires);
+            return produitRepository.save(produit);
+        }
+
+        return produit;
     }
 
     private PointCollecte seedPointCollecte(String nom, String adresse, String... anciensNoms) {
@@ -315,60 +315,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         throw new IllegalStateException("Impossible de créer un créneau de démonstration sans doublon.");
     }
 
-    private void seedCommandesDemoIfMissing(
-            Membre membre,
-            CreneauCollecte creneau1,
-            CreneauCollecte creneau2,
-            Produit carottes,
-            Produit pommesTerre,
-            Produit pommes,
-            Produit jusPomme,
-            Produit oeufs
-    ) {
-        if (commandeRepository.count() > 0) {
-            return;
-        }
-
-        commandeService.create(CommandeCreateRequestDto.builder()
-                .membreId(membre.getId())
-                .creneauCollecteId(creneau1.getId())
-                .commentaire("Commande de démonstration à annuler ou préparer.")
-                .produits(List.of(
-                        item(carottes.getId(), "2.00"),
-                        item(jusPomme.getId(), "1.00")
-                ))
-                .build());
-
-        CommandeResponseDto commandeReady = commandeService.create(CommandeCreateRequestDto.builder()
-                .membreId(membre.getId())
-                .creneauCollecteId(creneau2.getId())
-                .commentaire("Commande de démonstration déjà préparée.")
-                .produits(List.of(
-                        item(pommesTerre.getId(), "3.00"),
-                        item(pommes.getId(), "1.50"),
-                        item(oeufs.getId(), "1.00")
-                ))
-                .build());
-
-        commandeService.transitionStatusIfCurrent(
-                commandeReady.getId(),
-                StatutCommande.CONFIRMED,
-                StatutCommande.IN_PREP
-        );
-        commandeService.transitionStatusIfCurrent(
-                commandeReady.getId(),
-                StatutCommande.IN_PREP,
-                StatutCommande.READY
-        );
-    }
-
-    private CommandeCreateItemDto item(Long produitId, String quantite) {
-        return CommandeCreateItemDto.builder()
-                .produitId(produitId)
-                .quantite(decimal(quantite))
-                .build();
-    }
-
     private BigDecimal decimal(String value) {
         return new BigDecimal(value);
     }
@@ -389,6 +335,7 @@ public class DemoDataSeeder implements CommandLineRunner {
             String image,
             String origine,
             String producteur,
+            String conditionnement,
             boolean bio,
             boolean local,
             boolean vegan,
@@ -404,7 +351,8 @@ public class DemoDataSeeder implements CommandLineRunner {
                 + "\"vegetarien\":" + vegetarien
                 + "},"
                 + "\"origine\":\"" + origine + "\","
-                + "\"producteur\":\"" + producteur + "\""
+                + "\"producteur\":\"" + producteur + "\","
+                + "\"conditionnement\":\"" + conditionnement + "\""
                 + "}";
     }
 }

@@ -78,12 +78,14 @@ class RetraitServiceTest {
 
     @Test
     void confirmDelegatesNormalizedCodeAndReturnsLimitedView() {
+        LocalDateTime paymentDate = LocalDateTime.of(2040, 5, 10, 14, 5);
         CommandeResponseDto response = CommandeResponseDto.builder()
                 .id(9L)
                 .numero("PC01-20400510-000009")
                 .codeRetrait("ABC123")
                 .statut(StatutCommande.DISTRIBUTED)
                 .paye(true)
+                .datePaiement(paymentDate)
                 .dateRetrait(LocalDateTime.of(2040, 5, 10, 14, 0))
                 .montantTTC(new BigDecimal("24.50"))
                 .membre(CommandeMembreResumeDto.builder().nom("Dupont").prenom("Marie").build())
@@ -99,6 +101,7 @@ class RetraitServiceTest {
 
         assertThat(result.getStatut()).isEqualTo(StatutCommande.DISTRIBUTED);
         assertThat(result.getPaye()).isTrue();
+        assertThat(result.getDatePaiement()).isEqualTo(paymentDate);
         verify(commandeService).confirmWithdrawalByCode("ABC123");
     }
 

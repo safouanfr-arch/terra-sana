@@ -55,7 +55,7 @@
             <th>Image</th>
             <th>Nom</th>
             <th>Catégorie</th>
-            <th>Prix</th>
+            <th>Prix HT</th>
             <th>Stock</th>
             <th>Tags</th>
             <th>Statut</th>
@@ -177,11 +177,20 @@
               </datalist>
               <small class="field-help">Tapez ou sélectionnez une unité (suggestions disponibles)</small>
             </div>
+            <div class="form-group">
+              <label>Conditionnement</label>
+              <input
+                v-model="formData.conditionnement"
+                type="text"
+                class="form-control"
+                placeholder="Ex: sac de 5 kg, boîte de 6"
+              />
+            </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Prix (€) *</label>
+              <label>Prix HT (€) *</label>
               <input v-model.number="formData.prix" type="number" step="0.01" class="form-control" />
             </div>
             <div v-if="!editMode" class="form-group">
@@ -288,6 +297,7 @@ const formData = ref({
   tauxTVA: 6,
   origine: '',
   producteur: '',
+  conditionnement: '',
   badges: { bio: false, local: false, vegan: false, vegetarien: false },
   photos: [],
   actif: true
@@ -360,6 +370,7 @@ const handleAdd = async () => {
     tauxTVA: 6,
     origine: '',
     producteur: '',
+    conditionnement: '',
     badges: { bio: false, local: false, vegan: false, vegetarien: false },
     photos: [],
     actif: true
