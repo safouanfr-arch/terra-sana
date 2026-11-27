@@ -27,7 +27,7 @@ The backend enforces prices, availability, access control, stock reservations an
 | Frontend | Vue 3, Vite, Pinia, Vue Router, Axios |
 | Backend | Java 17, Spring Boot 4.0.10, Spring Security, Spring Data JPA |
 | Data | Hibernate, H2 |
-| Testing and CI | JUnit 5, Mockito, AssertJ, Gradle, GitHub Actions |
+| Testing and CI | JUnit 6, Mockito, AssertJ, Gradle, GitHub Actions |
 
 ## Architecture
 
