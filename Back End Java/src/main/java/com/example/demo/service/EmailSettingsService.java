@@ -10,8 +10,8 @@ import com.example.demo.dto.EmailSettingsDto;
 import com.example.demo.dto.EmailTemplateDto;
 import com.example.demo.model.enums.EmailNotificationType;
 import com.example.demo.model.ConfigurationEmail;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -134,7 +134,7 @@ public class EmailSettingsService {
     private String serialize(EmailSettingsDto dto) {
         try {
             return objectMapper.writeValueAsString(dto);
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Impossible de sauvegarder la configuration email.");
         }
     }
