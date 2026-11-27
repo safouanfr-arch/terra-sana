@@ -77,6 +77,8 @@ cd "Back End Java"
 
 L'API démarre sur `http://localhost:8081`. La base locale est créée dans `Back End Java/data/` et n'est pas versionnée.
 
+Le profil local `dev` écoute sur la boucle locale. Le profil `prod` se sélectionne explicitement et requiert une base préparée et une origine front configurée. Les requêtes qui modifient des données doivent inclure le jeton de session retourné par `GET /api/auth/csrf`. Le client Vue gère cet échange. [Documentation de sécurité](docs/security-review.md)
+
 La configuration standard utilise une base H2 persistante dans `data/terra-sana.mv.db`. Les tests utilisent une base H2 en mémoire distincte.
 
 #### SMTP

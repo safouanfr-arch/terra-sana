@@ -7,6 +7,8 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,20 +42,25 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 public class AuthController {
 
     private final AuthService authService;
+    private final CsrfTokenRepository csrfTokenRepository;
+
+    @GetMapping("/csrf")
+    public CsrfToken csrf(CsrfToken token) {
+        return token;
+    }
 
     @PostMapping("/login")
-    public AuthResponseDto login(@Valid @RequestBody LoginRequestDto dto, HttpServletRequest request) {
+    public AuthResponseDto login(
+            @Valid @RequestBody LoginRequestDto dto,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         AppUserPrincipal principal = authService.authenticate(dto);
         if (request.getSession(false) != null) {
             request.changeSessionId();
         }
-        UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        request.getSession(true).setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        csrfTokenRepository.saveToken(null, request, response);
+        storeAuthentication(principal, request);
 
         return authService.toResponse(principal);
     }

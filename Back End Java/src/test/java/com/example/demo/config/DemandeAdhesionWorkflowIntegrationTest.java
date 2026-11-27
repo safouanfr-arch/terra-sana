@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -64,7 +65,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
         ));
         LocalDateTime before = LocalDateTime.now();
 
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .with(remoteAddress("192.0.2.10"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload(email)))
@@ -123,20 +124,20 @@ class DemandeAdhesionWorkflowIntegrationTest {
         String falseEmail = "conditions-false-" + UUID.randomUUID() + "@terra.test";
         String trueEmail = "conditions-true-" + UUID.randomUUID() + "@terra.test";
 
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .with(remoteAddress("192.0.2.11"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload(absentEmail, null)))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .with(remoteAddress("192.0.2.12"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload(falseEmail, false)))
                 .andExpect(status().isBadRequest());
 
         LocalDateTime before = LocalDateTime.now();
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .with(remoteAddress("192.0.2.13"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload(trueEmail, true)))
@@ -158,7 +159,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
 
     @Test
     void confirmationEndpointIsPublicAndReturnsCleanInvalidResult() throws Exception {
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"unknown-token\"}"))
                 .andExpect(status().isOk())
@@ -186,7 +187,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
                 .conditionsVersion("v1.0")
                 .build());
 
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + rawToken + "\"}"))
                 .andExpect(status().isOk())
@@ -200,7 +201,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
         assertThat(confirmed.getConditionsAccepteesAt()).isNotNull();
         assertThat(confirmed.getConditionsVersion()).isEqualTo("v1.0");
 
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + rawToken + "\"}"))
                 .andExpect(status().isOk())
@@ -240,7 +241,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
         long emailCountBefore = confirmationEmailCount(demande.getId());
         LocalDateTime before = LocalDateTime.now();
 
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                         .with(remoteAddress("192.0.2.20"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\"}"))
@@ -264,14 +265,14 @@ class DemandeAdhesionWorkflowIntegrationTest {
                 .orElseThrow()
                 .getStatutEnvoi()).isEqualTo(EmailSendStatus.FAILED);
 
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"" + oldRawToken + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statut").value("INVALID"));
 
         String rotatedHash = updated.getConfirmationEmailTokenHash();
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                         .with(remoteAddress("192.0.2.21"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\"}"))
@@ -300,7 +301,7 @@ class DemandeAdhesionWorkflowIntegrationTest {
         );
 
         for (int index = 0; index < emails.size(); index++) {
-            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                             .with(remoteAddress("192.0.2." + (30 + index)))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"" + emails.get(index) + "\"}"))
@@ -315,13 +316,13 @@ class DemandeAdhesionWorkflowIntegrationTest {
     void publicEndpointsReturn429ByEmailAndIpWithoutAffectingAdminEndpoints() throws Exception {
         String repeatedEmail = "limited-" + UUID.randomUUID() + "@terra.test";
         for (int index = 0; index < 3; index++) {
-            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                             .with(remoteAddress("198.51.100." + (10 + index)))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"" + repeatedEmail + "\"}"))
                     .andExpect(status().isOk());
         }
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                         .with(remoteAddress("198.51.100.20"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + repeatedEmail + "\"}"))
@@ -329,13 +330,13 @@ class DemandeAdhesionWorkflowIntegrationTest {
 
         String repeatedIp = "198.51.100.30";
         for (int index = 0; index < 10; index++) {
-            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                             .with(remoteAddress(repeatedIp))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"ip-limit-" + index + "@terra.test\"}"))
                     .andExpect(status().isOk());
         }
-        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+        mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                         .with(remoteAddress(repeatedIp))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"ip-limit-final@terra.test\"}"))
@@ -343,13 +344,13 @@ class DemandeAdhesionWorkflowIntegrationTest {
 
         String creationLimitedIp = "198.51.100.40";
         for (int index = 0; index < 10; index++) {
-            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer")
+            mockMvc.perform(post("/api/demandes-adhesion/confirmation/renvoyer").with(csrf())
                             .with(remoteAddress(creationLimitedIp))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"creation-limit-" + index + "@terra.test\"}"))
                     .andExpect(status().isOk());
         }
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .with(remoteAddress(creationLimitedIp))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createPayload("blocked-creation-" + UUID.randomUUID() + "@terra.test")))

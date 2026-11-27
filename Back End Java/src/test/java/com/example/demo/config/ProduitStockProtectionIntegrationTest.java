@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -67,7 +68,7 @@ class ProduitStockProtectionIntegrationTest {
                 "categorieId", produit.getCategorie().getId()
         );
 
-        mockMvc.perform(put("/api/produits/{id}", produit.getId())
+        mockMvc.perform(put("/api/produits/{id}", produit.getId()).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
