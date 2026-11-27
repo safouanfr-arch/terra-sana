@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,7 +74,7 @@ class PasswordResetWorkflowIntegrationTest {
     }
 
     private JsonNode requestReset(String email) throws Exception {
-        String content = mockMvc.perform(post("/api/auth/password-reset/request")
+        String content = mockMvc.perform(post("/api/auth/password-reset/request").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(java.util.Map.of("email", email))))
                 .andExpect(status().isOk())

@@ -9,6 +9,14 @@ export const api = axios.create({
   timeout: 10000
 })
 
+api.interceptors.request.use(async config => {
+  if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
+    const { data } = await api.get('/auth/csrf')
+    config.headers.set(data.headerName, data.token)
+  }
+  return config
+})
+
 const EMAIL_WORKFLOW_TIMEOUT = 30000
 const GENERIC_SERVER_ERROR = 'Une erreur technique est survenue. Veuillez réessayer dans quelques instants.'
 

@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -21,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,6 +35,7 @@ import com.example.demo.model.Commande;
 import com.example.demo.model.CreneauCollecte;
 import com.example.demo.model.Membre;
 import com.example.demo.model.enums.StatutCommande;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -46,6 +49,40 @@ class SecurityAccessTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Test
+    void publicLoginRejectsMissingCsrfAndAcceptsTheSessionHeader() throws Exception {
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+
+        var bootstrap = mockMvc.perform(get("/api/auth/csrf"))
+                .andExpect(status().isOk())
+                .andReturn();
+        var token = objectMapper.readTree(bootstrap.getResponse().getContentAsString());
+        var session = (MockHttpSession) bootstrap.getRequest().getSession(false);
+        assertThat(session).isNotNull();
+
+        mockMvc.perform(post("/api/auth/login").session(session)
+                        .header(token.get("headerName").asText(), token.get("token").asText())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void authenticatedMemberCannotReachH2Console() throws Exception {
+        mockMvc.perform(get("/h2-console/").with(user("member").roles("MEMBRE")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void apiRejectsUnconfiguredOrigins() throws Exception {
+        mockMvc.perform(get("/api/auth/csrf").header(HttpHeaders.ORIGIN, "https://untrusted.example.test"))
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
+    }
 
     @Autowired
     private CommandeRepository commandeRepository;
@@ -130,7 +167,7 @@ class SecurityAccessTest {
 
     @Test
     void publicMembershipAndPasswordResetEndpointsRemainPublic() throws Exception {
-        mockMvc.perform(post("/api/demandes-adhesion")
+        mockMvc.perform(post("/api/demandes-adhesion").with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
@@ -144,28 +181,28 @@ class SecurityAccessTest {
     void preparationIncidentEndpointsRequireAdminRoleAndValidateReason() throws Exception {
         String endpoint = "/api/commandes/999999/incident-preparation";
 
-        mockMvc.perform(put(endpoint)
+        mockMvc.perform(put(endpoint).with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motif\":\"Produit manquant\"}"))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(put(endpoint)
+        mockMvc.perform(put(endpoint).with(csrf())
                         .with(user("membre.demo@terrasana.test").roles("MEMBRE"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motif\":\"Produit manquant\"}"))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(delete(endpoint)
+        mockMvc.perform(delete(endpoint).with(csrf())
                         .with(user("membre.demo@terrasana.test").roles("MEMBRE")))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(put(endpoint)
+        mockMvc.perform(put(endpoint).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motif\":\"   \"}"))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(put(endpoint)
+        mockMvc.perform(put(endpoint).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"motif\":\"Produit manquant\"}"))
@@ -176,14 +213,14 @@ class SecurityAccessTest {
     void preparationGroupFinalizationRequiresAdminRole() throws Exception {
         String endpoint = "/api/admin/preparation/groupes/999999/finaliser";
 
-        mockMvc.perform(post(endpoint))
+        mockMvc.perform(post(endpoint).with(csrf()))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post(endpoint)
+        mockMvc.perform(post(endpoint).with(csrf())
                         .with(user("membre.demo@terrasana.test").roles("MEMBRE")))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post(endpoint)
+        mockMvc.perform(post(endpoint).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN")))
                 .andExpect(status().isNotFound());
     }
@@ -208,14 +245,14 @@ class SecurityAccessTest {
     void preparationEmailRequiresAdminRoleAndRejectsUnknownSlot() throws Exception {
         String endpoint = "/api/admin/preparation/groupes/999999/email";
 
-        mockMvc.perform(post(endpoint))
+        mockMvc.perform(post(endpoint).with(csrf()))
                 .andExpect(status().isUnauthorized());
 
-        mockMvc.perform(post(endpoint)
+        mockMvc.perform(post(endpoint).with(csrf())
                         .with(user("membre.demo@terrasana.test").roles("MEMBRE")))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post(endpoint)
+        mockMvc.perform(post(endpoint).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN")))
                 .andExpect(status().isNotFound());
     }
@@ -226,7 +263,7 @@ class SecurityAccessTest {
         Long creneauId = commande.getCreneauCollecte().getId();
         var initialStatus = commande.getStatut();
 
-        mockMvc.perform(post("/api/admin/preparation/groupes/{creneauId}/email", creneauId)
+        mockMvc.perform(post("/api/admin/preparation/groupes/{creneauId}/email", creneauId).with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statutEnvoi").value("FAILED"))
@@ -273,18 +310,18 @@ class SecurityAccessTest {
                 "/api/admin/retraits/rechercher",
                 "/api/admin/retraits/confirmer"
         }) {
-            mockMvc.perform(post(endpoint)
+            mockMvc.perform(post(endpoint).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"codeRetrait\":\"UNKNOWN\"}"))
                     .andExpect(status().isUnauthorized());
 
-            mockMvc.perform(post(endpoint)
+            mockMvc.perform(post(endpoint).with(csrf())
                             .with(user("membre.demo@terrasana.test").roles("MEMBRE"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"codeRetrait\":\"UNKNOWN\"}"))
                     .andExpect(status().isForbidden());
 
-            mockMvc.perform(post(endpoint)
+            mockMvc.perform(post(endpoint).with(csrf())
                             .with(user("admin.demo@terrasana.test").roles("ADMIN"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"codeRetrait\":\"UNKNOWN\"}"))
@@ -297,7 +334,7 @@ class SecurityAccessTest {
         Commande commande = saveReadyOrder();
         String code = commande.getCodeRetrait().toLowerCase();
 
-        mockMvc.perform(post("/api/admin/retraits/rechercher")
+        mockMvc.perform(post("/api/admin/retraits/rechercher").with(csrf())
                         .with(user("admin.demo@terrasana.test").roles("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"codeRetrait\":\"  " + code + "  \"}"))

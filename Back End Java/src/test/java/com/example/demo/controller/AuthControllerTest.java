@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 
 import com.example.demo.dto.AuthResponseDto;
 import com.example.demo.dto.LoginRequestDto;
@@ -20,6 +21,7 @@ import com.example.demo.security.AppUserPrincipal;
 import com.example.demo.service.AuthService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +32,10 @@ class AuthControllerTest {
 
     @Mock
     private HttpServletRequest request;
+    @Mock
+    private HttpServletResponse servletResponse;
+    @Mock
+    private CsrfTokenRepository csrfTokenRepository;
 
     @Mock
     private HttpSession session;
@@ -61,10 +67,11 @@ class AuthControllerTest {
         when(request.getSession(false)).thenReturn(session);
         when(request.getSession(true)).thenReturn(session);
 
-        AuthResponseDto result = authController.login(credentials, request);
+        AuthResponseDto result = authController.login(credentials, request, servletResponse);
 
         assertThat(result).isSameAs(response);
         verify(request).changeSessionId();
+        verify(csrfTokenRepository).saveToken(null, request, servletResponse);
         verify(session).setAttribute(
                 eq(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY),
                 argThat(value -> value instanceof SecurityContext context
